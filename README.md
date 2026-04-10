@@ -19,6 +19,7 @@
   - 客戶註冊
   - 客戶 / 管理人員角色區分
   - 登入 / 登出
+  - 以環境變數自動建立管理員
 - `feedback`
   - 問卷 `Survey`
   - 題目 `Question`
@@ -74,11 +75,31 @@ python manage.py runserver
 
 ### Render 設定步驟
 
-1. 把此資料夾初始化成 Git 專案並推上 GitHub
-2. 到 Render 建立新的 Web Service
-3. 連接 GitHub repository
-4. Render 會自動讀取 `render.yaml`
-5. 若要使用 PostgreSQL，於 Render 新增 PostgreSQL 並設定 `DATABASE_URL`
+1. 連接 GitHub repository
+2. Build Command 設為 `./build.sh`
+3. Start Command 設為 `python -m gunicorn config.wsgi:application`
+4. 環境變數至少包含：
+
+```text
+DJANGO_SECRET_KEY=<隨機長字串>
+DEBUG=false
+ALLOWED_HOSTS=.onrender.com
+```
+
+5. 若使用免費方案且不能用 Shell，可額外設定：
+
+```text
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=your_email@example.com
+ADMIN_PASSWORD=your_password
+```
+
+部署時會自動：
+
+- 執行 migration
+- 建立或更新管理員帳號
+- 建立示範問卷資料
+- 收集靜態檔案
 
 ## 後續建議強化
 
