@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}登入{% endblock %}
+
+{% block content %}
+<section class="panel auth-panel">
+    <h1>登入平台</h1>
+    <p>管理人員可檢視後台儀表板，客戶可填寫正式問卷。</p>
+    <form method="post" class="survey-form">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="field-block">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="button">登入</button>
+    </form>
+</section>
+{% endblock %}

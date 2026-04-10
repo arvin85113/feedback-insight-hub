@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Feedback Insight Hub{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="wrap header-inner">
+            <a class="brand" href="{% url 'feedback:home' %}">Feedback Insight Hub</a>
+            <nav class="nav">
+                <a href="{% url 'feedback:home' %}">首頁</a>
+                {% if user.is_authenticated %}
+                    {% if user.is_manager %}
+                        <a href="{% url 'feedback:dashboard' %}">後台儀表板</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="link-button">登出</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}">登入</a>
+                    <a href="{% url 'accounts:signup' %}">註冊</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main class="wrap">
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="message">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

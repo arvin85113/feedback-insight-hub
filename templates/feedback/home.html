@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}平台首頁{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">統計導向的使用者回饋平台</p>
+        <h1>把問卷收集、統計分析、質性整理與改進追蹤整合成同一個平台</h1>
+        <p class="lead">適合專題展示的雙介面架構：正式登入填答、快捷 QRCode 問卷、後台儀表板、感謝信與後續改進通知。</p>
+    </div>
+    <div class="panel accent">
+        <h2>核心模組</h2>
+        <ul>
+            <li>角色登入：客戶 / 管理人員</li>
+            <li>問卷題型與資料型態預先定義</li>
+            <li>描述性統計、關鍵字萃取與分類建議</li>
+            <li>產品改進追蹤與定向寄信</li>
+        </ul>
+    </div>
+</section>
+
+<section class="grid two">
+    {% for survey in surveys %}
+        <article class="panel">
+            <h2>{{ survey.title }}</h2>
+            <p>{{ survey.description|default:"此問卷尚未補充說明。" }}</p>
+            <p><strong>收集模式：</strong>{{ survey.get_access_mode_display }}</p>
+            <div class="actions">
+                <a class="button" href="{% url 'feedback:survey-detail' survey.slug %}">正式填答</a>
+                <a class="button secondary" href="{% url 'feedback:survey-quick' survey.slug %}">快捷收集</a>
+            </div>
+        </article>
+    {% empty %}
+        <article class="panel">
+            <h2>尚未建立問卷</h2>
+            <p>可先登入 Django Admin 建立 Survey、Question 與關鍵字分類規則。</p>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}

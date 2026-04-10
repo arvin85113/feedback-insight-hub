@@ -1,0 +1,221 @@
+from collections import Counter
+import re
+from statistics import mean
+
+from django.conf import settings
+from django.db import models
+from django.db.models import Count
+from django.urls import reverse
+from django.utils import timezone
+
+
+class Survey(models.Model):
+    class AccessMode(models.TextChoices):
+        LOGIN = "login", "登入填寫"
+        QUICK = "quick", "快捷收集"
+        HYBRID = "hybrid", "雙模式"
+
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    access_mode = models.CharField(max_length=20, choices=AccessMode.choices, default=AccessMode.HYBRID)
+    thank_you_email_enabled = models.BooleanField(default=True)
+    improvement_tracking_enabled = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["title"]
+
+    def __str__(self):
+        return self.title
+
+    def get_absolute_url(self):
+        return reverse("feedback:survey-detail", args=[self.slug])
+
+
+class Question(models.Model):
+    class Kind(models.TextChoices):
+        SHORT_TEXT = "short_text", "短文"
+        LONG_TEXT = "long_text", "長文"
+        SINGLE_CHOICE = "single_choice", "單選"
+        MULTIPLE_CHOICE = "multiple_choice", "多選"
+        INTEGER = "integer", "整數"
+        DECIMAL = "decimal", "連續數值"
+        SCALE = "scale", "量表"
+
+    class DataType(models.TextChoices):
+        NOMINAL = "nominal", "名目"
+        ORDINAL = "ordinal", "序位"
+        DISCRETE = "discrete", "離散"
+        CONTINUOUS = "continuous", "連續"
+        TEXT = "text", "文字"
+
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="questions")
+    title = models.CharField(max_length=255)
+    help_text = models.CharField(max_length=255, blank=True)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    data_type = models.CharField(max_length=20, choices=DataType.choices)
+    options_text = models.TextField(blank=True, help_text="單選或多選使用，一行一個選項")
+    is_required = models.BooleanField(default=True)
+    enable_keyword_tracking = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.survey.title} - {self.title}"
+
+    @property
+    def options(self):
+        return [line.strip() for line in self.options_text.splitlines() if line.strip()]
+
+
+class FeedbackSubmission(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="submissions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="submissions",
+        blank=True,
+        null=True,
+    )
+    respondent_name = models.CharField(max_length=120, blank=True)
+    respondent_email = models.EmailField(blank=True)
+    source = models.CharField(max_length=20, choices=Survey.AccessMode.choices, default=Survey.AccessMode.QUICK)
+    consent_follow_up = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"{self.survey.title} @ {self.submitted_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def display_name(self):
+        if self.respondent_name:
+            return self.respondent_name
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        return "匿名受訪者"
+
+
+class Answer(models.Model):
+    submission = models.ForeignKey(FeedbackSubmission, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
+    value = models.TextField()
+
+    class Meta:
+        unique_together = ("submission", "question")
+
+    def __str__(self):
+        return f"{self.question.title}: {self.value[:30]}"
+
+
+class KeywordCategory(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="keyword_categories")
+    keyword = models.CharField(max_length=100)
+    category = models.CharField(max_length=100)
+    threshold = models.PositiveIntegerField(default=2)
+
+    class Meta:
+        unique_together = ("survey", "keyword")
+        ordering = ["category", "keyword"]
+
+    def __str__(self):
+        return f"{self.category} / {self.keyword}"
+
+
+class ImprovementUpdate(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="improvements")
+    title = models.CharField(max_length=255)
+    summary = models.TextField()
+    related_category = models.CharField(max_length=100, blank=True)
+    send_global_notice = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    emailed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class ImprovementDispatch(models.Model):
+    improvement = models.ForeignKey(ImprovementUpdate, on_delete=models.CASCADE, related_name="dispatches")
+    submission = models.ForeignKey(FeedbackSubmission, on_delete=models.CASCADE, related_name="dispatches")
+    personalized_note = models.TextField(blank=True)
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ("improvement", "submission")
+
+
+def tokenize_feedback(text):
+    tokens = re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", text.lower())
+    stop_words = {"我們", "你們", "產品", "系統", "希望", "可以", "這個", "因為", "feedback"}
+    return [token for token in tokens if token not in stop_words]
+
+
+def keyword_summary(survey):
+    text_values = Answer.objects.filter(
+        question__survey=survey,
+        question__enable_keyword_tracking=True,
+    ).values_list("value", flat=True)
+    counts = Counter()
+    for value in text_values:
+        counts.update(tokenize_feedback(value))
+
+    categories = []
+    for keyword, count in counts.most_common(20):
+        mapping = survey.keyword_categories.filter(keyword=keyword, threshold__lte=count).first()
+        categories.append(
+            {
+                "keyword": keyword,
+                "count": count,
+                "category": mapping.category if mapping else "待分類",
+            }
+        )
+    return categories
+
+
+def chart_summary(survey):
+    rows = []
+    for question in survey.questions.all():
+        answers = Answer.objects.filter(question=question)
+        if question.kind in {Question.Kind.INTEGER, Question.Kind.DECIMAL, Question.Kind.SCALE}:
+            numeric_values = []
+            for answer in answers:
+                try:
+                    numeric_values.append(float(answer.value))
+                except ValueError:
+                    continue
+            if numeric_values:
+                rows.append(
+                    {
+                        "question": question,
+                        "type": "numeric",
+                        "count": len(numeric_values),
+                        "avg": round(mean(numeric_values), 2),
+                        "min": min(numeric_values),
+                        "max": max(numeric_values),
+                    }
+                )
+        elif question.kind in {Question.Kind.SINGLE_CHOICE, Question.Kind.MULTIPLE_CHOICE}:
+            counts = answers.values("value").annotate(total=Count("id")).order_by("-total")
+            rows.append({"question": question, "type": "choice", "counts": counts})
+    return rows
+
+
+def recommend_analysis(question):
+    if question.data_type == Question.DataType.CONTINUOUS:
+        return "可送入相關分析、T 檢定或 ANOVA 模組"
+    if question.data_type in {Question.DataType.NOMINAL, Question.DataType.ORDINAL}:
+        return "適合交叉分析、卡方檢定與描述性統計"
+    if question.data_type == Question.DataType.TEXT:
+        return "適合關鍵字萃取、文字雲與質性分類"
+    return "可先以描述性統計與圖表呈現"

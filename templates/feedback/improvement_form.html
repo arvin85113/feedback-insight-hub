@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>{{ survey.title }} 改進追蹤</h1>
+    <p>建立改版通知後，系統會向同意後續聯繫的受訪者寄送全域或分類式通知。</p>
+    <form method="post" class="survey-form">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="field-block">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="button">建立通知</button>
+    </form>
+</section>
+{% endblock %}

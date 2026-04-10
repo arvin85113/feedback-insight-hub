@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}快捷收集{% endblock %}
+
+{% block content %}
+<section class="panel accent">
+    <p class="eyebrow">快捷收集介面</p>
+    <h1>{{ survey.title }}</h1>
+    <p>適合 QRCode、街訪或活動現場快速填寫。若不需要聯絡資訊，可直接留空。</p>
+    <form method="post" class="survey-form">
+        {% csrf_token %}
+        <div class="grid two compact">
+            {% for field in quick_form %}
+                <div>
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+        </div>
+        {% for field in form %}
+            <div class="field-block">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="button">快速送出</button>
+    </form>
+</section>
+{% endblock %}

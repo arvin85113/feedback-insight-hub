@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>回饋已送出</h1>
+    <p>系統已完成接收，若有填寫 Email 且問卷啟用感謝信，會同步寄出通知。</p>
+    <a class="button" href="{% url 'feedback:home' %}">返回首頁</a>
+</section>
+{% endblock %}
