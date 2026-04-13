@@ -1,0 +1,56 @@
+{% extends "feedback/dashboard_base.html" %}
+
+{% block title %}統計分析{% endblock %}
+
+{% block dashboard_content %}
+<section class="section-header with-filter">
+    <div>
+        <h1>統計分析</h1>
+        <p>量化統計與數據視覺化</p>
+    </div>
+    <form method="get" class="toolbar-form">
+        <select name="survey" onchange="this.form.submit()">
+            <option value="">選擇問卷</option>
+            {% for survey in survey_list %}
+                <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</section>
+
+<section class="board-card">
+    {% if selected_survey %}
+        <div class="dashboard-grid">
+            <div class="stack-list">
+                {% for item in question_analysis %}
+                    <article class="insight-card">
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ item.data_type }}</small>
+                        <p>{{ item.analysis }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="stack-list">
+                {% for chart in charts %}
+                    <article class="insight-card">
+                        <strong>{{ chart.question.title }}</strong>
+                        {% if chart.type == "numeric" %}
+                            <p>樣本數 {{ chart.count }} / 平均 {{ chart.avg }} / 最小 {{ chart.min }} / 最大 {{ chart.max }}</p>
+                        {% else %}
+                            <ul class="mini-list">
+                                {% for row in chart.counts %}
+                                    <li>{{ row.value }}：{{ row.total }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <div class="empty-card">此問卷尚無可量化資料。</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-card">請選擇一份問卷或該問卷尚無數據</div>
+    {% endif %}
+</section>
+{% endblock %}

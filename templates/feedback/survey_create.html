@@ -1,18 +1,19 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}改進通知{% endblock %}
+{% block title %}建立問卷{% endblock %}
 
 {% block dashboard_content %}
 <section class="section-header">
     <div>
-        <h1>{{ survey.title }} 改進追蹤</h1>
-        <p>建立改版通知後，系統會向同意後續聯繫的受訪者寄送全域或分類式通知。</p>
+        <h1>建立問卷</h1>
+        <p>先設定表單標題、模式與基本配置，再進入題目編排</p>
     </div>
 </section>
 
-<section class="board-card">
-    <form method="post" class="survey-form">
+<section class="google-form-shell">
+    <form method="post" class="google-meta-card">
         {% csrf_token %}
+        <div class="form-title-band"></div>
         {% for field in form %}
             <div class="field-block">
                 {{ field.label_tag }}
@@ -20,7 +21,7 @@
                 {{ field.errors }}
             </div>
         {% endfor %}
-        <button type="submit" class="primary-action">建立通知</button>
+        <button type="submit" class="primary-action wide">建立並開始編輯</button>
     </form>
 </section>
 {% endblock %}

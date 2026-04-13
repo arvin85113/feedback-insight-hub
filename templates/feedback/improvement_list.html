@@ -1,0 +1,31 @@
+{% extends "feedback/dashboard_base.html" %}
+
+{% block title %}改進追蹤{% endblock %}
+
+{% block dashboard_content %}
+<section class="section-header with-action">
+    <div>
+        <h1>改進追蹤</h1>
+        <p>追蹤產品改進並通知相關客戶</p>
+    </div>
+    {% if survey_list %}
+        <a class="primary-action" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">＋ 新增改進</a>
+    {% endif %}
+</section>
+
+<section class="board-card">
+    {% if improvements %}
+        <div class="stack-list">
+            {% for item in improvements %}
+                <article class="insight-card">
+                    <strong>{{ item.title }}</strong>
+                    <small>{{ item.survey.title }}</small>
+                    <p>{{ item.summary|truncatechars:140 }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-card">尚無改進項目</div>
+    {% endif %}
+</section>
+{% endblock %}

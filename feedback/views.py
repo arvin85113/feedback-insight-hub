@@ -1,16 +1,28 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
+from django.db.models import Count
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DetailView, TemplateView
 
-from .forms import ImprovementUpdateForm, QuickAccessForm, SurveyFormBuilder
+from .forms import (
+    ImprovementUpdateForm,
+    QuestionCreateForm,
+    QuickAccessForm,
+    SurveyCreateForm,
+    SurveyFormBuilder,
+)
 from .models import (
     Answer,
     FeedbackSubmission,
     ImprovementDispatch,
+    ImprovementUpdate,
+    Question,
     Survey,
     chart_summary,
     keyword_summary,
@@ -23,6 +35,26 @@ class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         return self.request.user.is_authenticated and self.request.user.is_manager
 
 
+class DashboardBaseMixin(ManagerRequiredMixin):
+    dashboard_nav = [
+        ("feedback:dashboard", "總覽儀表板", "grid"),
+        ("feedback:survey-manager", "問卷管理", "clipboard"),
+        ("feedback:stats-overview", "統計分析", "chart"),
+        ("feedback:text-analysis", "文字分析", "message"),
+        ("feedback:improvement-list", "改進追蹤", "wrench"),
+        ("feedback:notice-center", "通告管理", "send"),
+    ]
+
+    active_section = ""
+
+    def get_dashboard_base_context(self):
+        return {
+            "dashboard_nav": self.dashboard_nav,
+            "active_section": self.active_section,
+            "survey_list": Survey.objects.filter(is_active=True).order_by("title"),
+        }
+
+
 class HomeView(TemplateView):
     template_name = "feedback/home.html"
 
@@ -32,15 +64,131 @@ class HomeView(TemplateView):
         return context
 
 
-class DashboardView(ManagerRequiredMixin, TemplateView):
+class DashboardView(DashboardBaseMixin, TemplateView):
     template_name = "feedback/dashboard.html"
+    active_section = "feedback:dashboard"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         surveys = Survey.objects.prefetch_related("questions", "keyword_categories").all()
-        summary = []
-        for survey in surveys:
-            questions = [
+        submissions = FeedbackSubmission.objects.select_related("survey")
+        improvements = ImprovementUpdate.objects.all()
+        last_week = timezone.now() - timedelta(days=6)
+
+        daily_counts = []
+        for index in range(7):
+            target_day = (last_week + timedelta(days=index)).date()
+            total = submissions.filter(submitted_at__date=target_day).count()
+            daily_counts.append({"label": target_day.strftime("%m/%d"), "total": total})
+
+        total_surveys = surveys.count()
+        total_submissions = submissions.count()
+        total_improvements = improvements.count()
+        avg_responses = round(total_submissions / total_surveys, 1) if total_surveys else 0
+
+        context.update(self.get_dashboard_base_context())
+        context.update(
+            {
+                "metrics": [
+                    {"label": "問卷總數", "value": total_surveys, "hint": f"{surveys.filter(is_active=True).count()} 份進行中", "accent": "blue"},
+                    {"label": "回覆總數", "value": total_submissions, "hint": "所有問卷", "accent": "violet"},
+                    {"label": "改進項目", "value": total_improvements, "hint": f"{improvements.filter(emailed_at__isnull=False).count()} 項已通知", "accent": "green"},
+                    {"label": "平均回覆數", "value": avg_responses, "hint": "每份問卷", "accent": "amber"},
+                ],
+                "daily_counts": daily_counts,
+                "recent_surveys": surveys[:5],
+            }
+        )
+        return context
+
+
+class SurveyManagerView(DashboardBaseMixin, TemplateView):
+    template_name = "feedback/survey_manager.html"
+    active_section = "feedback:survey-manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        surveys = Survey.objects.prefetch_related("questions").all()
+        context.update(self.get_dashboard_base_context())
+        context["surveys"] = surveys
+        return context
+
+
+class SurveyCreateView(DashboardBaseMixin, CreateView):
+    template_name = "feedback/survey_create.html"
+    form_class = SurveyCreateForm
+    active_section = "feedback:survey-manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_dashboard_base_context())
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "新問卷已建立，接著加入題目。")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("feedback:survey-builder", args=[self.object.slug])
+
+
+class SurveyBuilderView(DashboardBaseMixin, DetailView):
+    template_name = "feedback/survey_builder.html"
+    context_object_name = "survey"
+    model = Survey
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+    active_section = "feedback:survey-manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_dashboard_base_context())
+        context["question_form"] = kwargs.get("question_form") or QuestionCreateForm(
+            initial={"order": self.object.questions.count() + 1}
+        )
+        context["responses_count"] = self.object.submissions.count()
+        context["builder_tabs"] = [
+            {"key": "questions", "label": "問題"},
+            {"key": "responses", "label": "回覆"},
+            {"key": "settings", "label": "設定"},
+        ]
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        action = request.POST.get("action")
+
+        if action == "delete-question":
+            question = get_object_or_404(Question, id=request.POST.get("question_id"), survey=self.object)
+            question.delete()
+            messages.success(request, "題目已刪除。")
+            return redirect("feedback:survey-builder", slug=self.object.slug)
+
+        question_form = QuestionCreateForm(request.POST)
+        if question_form.is_valid():
+            question = question_form.save(commit=False)
+            question.survey = self.object
+            question.save()
+            messages.success(request, "題目已加入表單。")
+            return redirect("feedback:survey-builder", slug=self.object.slug)
+
+        context = self.get_context_data(question_form=question_form, object=self.object)
+        return self.render_to_response(context)
+
+
+class StatsOverviewView(DashboardBaseMixin, TemplateView):
+    template_name = "feedback/stats_overview.html"
+    active_section = "feedback:stats-overview"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected_slug = self.request.GET.get("survey")
+        survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
+        context.update(self.get_dashboard_base_context())
+        context["selected_survey"] = survey
+        context["charts"] = chart_summary(survey) if survey else []
+        context["question_analysis"] = (
+            [
                 {
                     "title": question.title,
                     "data_type": question.get_data_type_display(),
@@ -48,17 +196,46 @@ class DashboardView(ManagerRequiredMixin, TemplateView):
                 }
                 for question in survey.questions.all()
             ]
-            summary.append(
-                {
-                    "survey": survey,
-                    "submission_count": survey.submissions.count(),
-                    "question_count": survey.questions.count(),
-                    "keywords": keyword_summary(survey),
-                    "charts": chart_summary(survey),
-                    "questions": questions,
-                }
-            )
-        context["summary"] = summary
+            if survey
+            else []
+        )
+        return context
+
+
+class TextAnalysisView(DashboardBaseMixin, TemplateView):
+    template_name = "feedback/text_analysis.html"
+    active_section = "feedback:text-analysis"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected_slug = self.request.GET.get("survey")
+        survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
+        context.update(self.get_dashboard_base_context())
+        context["selected_survey"] = survey
+        context["keywords"] = keyword_summary(survey) if survey else []
+        context["text_questions"] = survey.questions.filter(data_type=Question.DataType.TEXT) if survey else []
+        return context
+
+
+class ImprovementListView(DashboardBaseMixin, TemplateView):
+    template_name = "feedback/improvement_list.html"
+    active_section = "feedback:improvement-list"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_dashboard_base_context())
+        context["improvements"] = ImprovementUpdate.objects.select_related("survey").all()
+        return context
+
+
+class NoticeCenterView(DashboardBaseMixin, TemplateView):
+    template_name = "feedback/notice_center.html"
+    active_section = "feedback:notice-center"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_dashboard_base_context())
+        context["notices"] = ImprovementUpdate.objects.select_related("survey").all()
         return context
 
 
@@ -161,7 +338,7 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
-        return reverse_lazy("feedback:dashboard")
+        return reverse_lazy("feedback:improvement-list")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

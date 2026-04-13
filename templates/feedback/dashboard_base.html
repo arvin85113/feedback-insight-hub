@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block body_class %}dashboard-shell{% endblock %}
+
+{% block shell %}
+<div class="dashboard-app">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">∿</div>
+            <div>
+                <strong>FeedbackIQ</strong>
+                <small>Analytics Platform</small>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            {% for route, label, icon in dashboard_nav %}
+                <a class="sidebar-link {% if active_section == route %}active{% endif %}" href="{% url route %}">
+                    <span class="sidebar-icon {{ icon }}"></span>
+                    <span>{{ label }}</span>
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <div class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div></div>
+            <div class="dashboard-user">
+                <span class="notification-dot"></span>
+                <span class="avatar">{{ user.first_name|default:user.username|first|upper }}</span>
+                <span>{{ user.get_full_name|default:user.username }}</span>
+            </div>
+        </header>
+
+        <main class="dashboard-content">
+            {% if messages %}
+                <section class="dashboard-messages">
+                    {% for message in messages %}
+                        <div class="message">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+            {% block dashboard_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}

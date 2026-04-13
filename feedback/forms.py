@@ -47,3 +47,69 @@ class ImprovementUpdateForm(forms.ModelForm):
     class Meta:
         model = ImprovementUpdate
         fields = ("title", "summary", "related_category", "send_global_notice")
+        labels = {
+            "title": "改進標題",
+            "summary": "更新內容",
+            "related_category": "對應回饋分類",
+            "send_global_notice": "同步發送全域通知",
+        }
+
+
+class SurveyCreateForm(forms.ModelForm):
+    class Meta:
+        model = Survey
+        fields = (
+            "title",
+            "slug",
+            "description",
+            "access_mode",
+            "thank_you_email_enabled",
+            "improvement_tracking_enabled",
+            "is_active",
+        )
+        labels = {
+            "title": "表單名稱",
+            "slug": "網址識別碼",
+            "description": "表單說明",
+            "access_mode": "收集模式",
+            "thank_you_email_enabled": "送出後寄送感謝信",
+            "improvement_tracking_enabled": "啟用改進追蹤",
+            "is_active": "啟用表單",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+
+class QuestionCreateForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = (
+            "title",
+            "help_text",
+            "kind",
+            "data_type",
+            "options_text",
+            "is_required",
+            "enable_keyword_tracking",
+            "order",
+        )
+        labels = {
+            "title": "問題標題",
+            "help_text": "輔助說明",
+            "kind": "題型",
+            "data_type": "資料型態",
+            "options_text": "選項清單",
+            "is_required": "必填",
+            "enable_keyword_tracking": "納入文字關鍵字分析",
+            "order": "顯示順序",
+        }
+        widgets = {
+            "options_text": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "placeholder": "一行一個選項\n非常滿意\n滿意\n普通\n不滿意",
+                }
+            ),
+            "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照最近一次使用經驗作答"}),
+        }

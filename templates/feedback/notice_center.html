@@ -1,0 +1,31 @@
+{% extends "feedback/dashboard_base.html" %}
+
+{% block title %}通告管理{% endblock %}
+
+{% block dashboard_content %}
+<section class="section-header with-action">
+    <div>
+        <h1>通告管理</h1>
+        <p>發布全域或針對性通告給客戶</p>
+    </div>
+    {% if survey_list %}
+        <a class="primary-action" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">＋ 建立通告</a>
+    {% endif %}
+</section>
+
+<section class="board-card">
+    {% if notices %}
+        <div class="stack-list">
+            {% for notice in notices %}
+                <article class="insight-card">
+                    <strong>{{ notice.title }}</strong>
+                    <small>{{ notice.survey.title }}</small>
+                    <p>{{ notice.summary|truncatechars:140 }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-card">尚無通告，點擊上方建立第一則</div>
+    {% endif %}
+</section>
+{% endblock %}

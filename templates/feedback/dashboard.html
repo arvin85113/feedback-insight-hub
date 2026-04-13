@@ -1,69 +1,94 @@
-{% extends "base.html" %}
+{% extends "feedback/dashboard_base.html" %}
 
-{% block title %}後台儀表板{% endblock %}
+{% block title %}總覽儀表板{% endblock %}
 
-{% block content %}
-<section class="hero compact-hero">
+{% block dashboard_content %}
+<section class="section-header">
     <div>
-        <p class="eyebrow">管理後台</p>
-        <h1>統計分析與質性回饋總覽</h1>
-        <p class="lead">依資料型態推薦統計模組，並整理文字回饋中的高頻關鍵字與分類。</p>
+        <h1>總覽儀表板</h1>
+        <p>即時掌握回饋數據與改進進度</p>
     </div>
 </section>
 
-{% for block in summary %}
-    <section class="panel">
-        <div class="section-head">
+<section class="metric-grid">
+    {% for metric in metrics %}
+        <article class="metric-card">
             <div>
-                <h2>{{ block.survey.title }}</h2>
-                <p>{{ block.survey.description }}</p>
+                <p>{{ metric.label }}</p>
+                <strong>{{ metric.value }}</strong>
+                <small>{{ metric.hint }}</small>
             </div>
-            <a class="button secondary" href="{% url 'feedback:improvement-create' block.survey.slug %}">建立改進追蹤</a>
-        </div>
-        <div class="stats">
-            <div class="stat-card"><span>{{ block.submission_count }}</span><small>回覆數</small></div>
-            <div class="stat-card"><span>{{ block.question_count }}</span><small>題目數</small></div>
-        </div>
+            <span class="metric-badge {{ metric.accent }}"></span>
+        </article>
+    {% endfor %}
+</section>
 
-        <h3>統計建議</h3>
-        <div class="grid two">
-            {% for question in block.questions %}
-                <article class="subpanel">
-                    <strong>{{ question.title }}</strong>
-                    <p>{{ question.data_type }}</p>
-                    <p>{{ question.analysis }}</p>
-                </article>
+<section class="dashboard-grid">
+    <article class="board-card chart-card">
+        <h2>近 7 天回覆趨勢</h2>
+        <div class="trend-chart">
+            {% for point in daily_counts %}
+                <div class="trend-col">
+                    <div class="trend-bar-wrap">
+                        <span class="trend-bar" style="height: {% widthratio point.total 5 100 %}%"></span>
+                    </div>
+                    <small>{{ point.label }}</small>
+                </div>
             {% endfor %}
         </div>
+    </article>
 
-        <h3>描述性統計</h3>
-        <div class="grid two">
-            {% for chart in block.charts %}
-                <article class="subpanel">
-                    <strong>{{ chart.question.title }}</strong>
-                    {% if chart.type == "numeric" %}
-                        <p>樣本數 {{ chart.count }} / 平均 {{ chart.avg }} / 最小 {{ chart.min }} / 最大 {{ chart.max }}</p>
-                    {% else %}
-                        <ul>
-                            {% for row in chart.counts %}
-                                <li>{{ row.value }}：{{ row.total }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </article>
-            {% empty %}
-                <p>目前尚無可統計資料。</p>
+    <article class="board-card">
+        <h2>快速操作</h2>
+        <div class="action-list">
+            <a class="action-item" href="{% url 'feedback:survey-create' %}">
+                <span class="action-bullet">＋</span>
+                <div>
+                    <strong>建立問卷</strong>
+                    <small>建立新的回饋問卷</small>
+                </div>
+            </a>
+            <a class="action-item" href="{% url 'feedback:stats-overview' %}">
+                <span class="action-bullet">▥</span>
+                <div>
+                    <strong>查看分析</strong>
+                    <small>統計數據分析</small>
+                </div>
+            </a>
+            <a class="action-item" href="{% url 'feedback:text-analysis' %}">
+                <span class="action-bullet">✦</span>
+                <div>
+                    <strong>文字分析</strong>
+                    <small>質性回饋分析</small>
+                </div>
+            </a>
+            <a class="action-item" href="{% url 'feedback:notice-center' %}">
+                <span class="action-bullet">✉</span>
+                <div>
+                    <strong>發布通告</strong>
+                    <small>通知客戶更新</small>
+                </div>
+            </a>
+        </div>
+    </article>
+</section>
+
+<section class="board-card">
+    <h2>最近問卷</h2>
+    {% if recent_surveys %}
+        <div class="survey-table">
+            {% for survey in recent_surveys %}
+                <a class="survey-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+                    <div>
+                        <strong>{{ survey.title }}</strong>
+                        <small>{{ survey.description|default:"尚未補充說明" }}</small>
+                    </div>
+                    <span>{{ survey.submissions.count }} 份回覆</span>
+                </a>
             {% endfor %}
         </div>
-
-        <h3>關鍵字與分類候選</h3>
-        <div class="keyword-cloud">
-            {% for keyword in block.keywords %}
-                <span class="keyword">{{ keyword.keyword }} ({{ keyword.count }}) / {{ keyword.category }}</span>
-            {% empty %}
-                <p>尚未累積足夠的文字回饋。</p>
-            {% endfor %}
-        </div>
-    </section>
-{% endfor %}
+    {% else %}
+        <div class="empty-card">尚無活動記錄，建立第一份問卷開始收集回饋吧。</div>
+    {% endif %}
+</section>
 {% endblock %}

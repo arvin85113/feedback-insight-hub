@@ -1,0 +1,84 @@
+{% extends "feedback/dashboard_base.html" %}
+
+{% block title %}{{ survey.title }}{% endblock %}
+
+{% block dashboard_content %}
+<section class="builder-tabs">
+    {% for tab in builder_tabs %}
+        <span class="builder-tab {% if tab.key == 'questions' %}active{% endif %}">{{ tab.label }}</span>
+    {% endfor %}
+</section>
+
+<section class="google-form-shell">
+    <div class="google-meta-card">
+        <div class="form-title-band"></div>
+        <h1>{{ survey.title }}</h1>
+        <p>{{ survey.description|default:"表單說明" }}</p>
+        <div class="meta-inline">
+            <span>{{ survey.get_access_mode_display }}</span>
+            <span>{{ responses_count }} 份回覆</span>
+            <span>{{ survey.questions.count }} 題</span>
+        </div>
+    </div>
+
+    {% for question in survey.questions.all %}
+        <article class="question-editor-card">
+            <div class="question-editor-head">
+                <div>
+                    <strong>{{ question.title }}</strong>
+                    <small>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</small>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete-question">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    <button type="submit" class="ghost-danger">刪除</button>
+                </form>
+            </div>
+            {% if question.help_text %}<p class="muted-copy">{{ question.help_text }}</p>{% endif %}
+            {% if question.options %}
+                <ul class="option-list">
+                    {% for option in question.options %}
+                        <li>{{ option }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="question-meta-row">
+                <span>{% if question.is_required %}必填{% else %}選填{% endif %}</span>
+                {% if question.enable_keyword_tracking %}<span>文字分析</span>{% endif %}
+            </div>
+        </article>
+    {% empty %}
+        <article class="question-editor-card empty">
+            <strong>尚未加入題目</strong>
+            <p>先從右側區塊新增一題，建立你的表單骨架。</p>
+        </article>
+    {% endfor %}
+</section>
+
+<section class="builder-workbench">
+    <div class="builder-main">
+        <article class="question-editor-card draft">
+            <div class="drag-handle">⠿</div>
+            <form method="post" class="survey-form">
+                {% csrf_token %}
+                {% for field in question_form %}
+                    <div class="field-block">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="primary-action">新增題目</button>
+            </form>
+        </article>
+    </div>
+    <aside class="builder-toolbar">
+        <span>＋</span>
+        <span>⧉</span>
+        <span>Tt</span>
+        <span>🖼</span>
+        <span>▤</span>
+    </aside>
+</section>
+{% endblock %}
