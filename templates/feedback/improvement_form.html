@@ -1,26 +1,30 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}改進通知{% endblock %}
+{% block title %}建立改善通知 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header">
+<section class="manager-header">
     <div>
-        <h1>{{ survey.title }} 改進追蹤</h1>
-        <p>建立改版通知後，系統會向同意後續聯繫的受訪者寄送全域或分類式通知。</p>
+        <p class="section-kicker">Improvement Update</p>
+        <h1>{{ survey.title }} 的改善通知</h1>
+        <p>建立一筆正式的改善更新，系統會依據顧客填答時的通知選擇與平台偏好決定是否寄送。</p>
     </div>
 </section>
 
-<section class="board-card">
-    <form method="post" class="survey-form">
+<section class="manager-panel">
+    <form method="post" class="form-stack">
         {% csrf_token %}
         {% for field in form %}
             <div class="field-block">
                 {{ field.label_tag }}
                 {{ field }}
+                {% if field.help_text %}
+                    <p class="muted-text">{{ field.help_text }}</p>
+                {% endif %}
                 {{ field.errors }}
             </div>
         {% endfor %}
-        <button type="submit" class="primary-action">建立通知</button>
+        <button type="submit" class="button button-primary">建立改善通知</button>
     </form>
 </section>
 {% endblock %}

@@ -1,31 +1,31 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}總覽儀表板{% endblock %}
+{% block title %}管理總覽 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header">
+<section class="manager-header">
     <div>
-        <h1>總覽儀表板</h1>
-        <p>即時掌握回饋數據與改進進度</p>
+        <p class="section-kicker">Overview</p>
+        <h1>管理總覽</h1>
+        <p>集中查看問卷規模、近期回覆趨勢、改善進度與下一步操作。</p>
     </div>
 </section>
 
-<section class="metric-grid">
+<section class="manager-metric-grid">
     {% for metric in metrics %}
-        <article class="metric-card">
-            <div>
-                <p>{{ metric.label }}</p>
-                <strong>{{ metric.value }}</strong>
-                <small>{{ metric.hint }}</small>
-            </div>
-            <span class="metric-badge {{ metric.accent }}"></span>
+        <article class="manager-metric-card">
+            <p>{{ metric.label }}</p>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.hint }}</small>
         </article>
     {% endfor %}
 </section>
 
-<section class="dashboard-grid">
-    <article class="board-card chart-card">
-        <h2>近 7 天回覆趨勢</h2>
+<section class="manager-content-grid">
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>近七日回覆趨勢</h2>
+        </div>
         <div class="trend-chart">
             {% for point in daily_counts %}
                 <div class="trend-col">
@@ -38,57 +38,56 @@
         </div>
     </article>
 
-    <article class="board-card">
-        <h2>快速操作</h2>
-        <div class="action-list">
-            <a class="action-item" href="{% url 'feedback:survey-create' %}">
-                <span class="action-bullet">＋</span>
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>快捷動作</h2>
+        </div>
+        <div class="record-list">
+            <a class="record-row" href="{% url 'feedback:survey-create' %}">
                 <div>
-                    <strong>建立問卷</strong>
-                    <small>建立新的回饋問卷</small>
+                    <strong>建立新問卷</strong>
+                    <p>新增正式表單並進入題目編輯流程</p>
                 </div>
             </a>
-            <a class="action-item" href="{% url 'feedback:stats-overview' %}">
-                <span class="action-bullet">▥</span>
+            <a class="record-row" href="{% url 'feedback:stats-overview' %}">
                 <div>
-                    <strong>查看分析</strong>
-                    <small>統計數據分析</small>
+                    <strong>查看統計分析</strong>
+                    <p>檢視數值題與選擇題的分布與摘要</p>
                 </div>
             </a>
-            <a class="action-item" href="{% url 'feedback:text-analysis' %}">
-                <span class="action-bullet">✦</span>
+            <a class="record-row" href="{% url 'feedback:text-analysis' %}">
                 <div>
-                    <strong>文字分析</strong>
-                    <small>質性回饋分析</small>
-                </div>
-            </a>
-            <a class="action-item" href="{% url 'feedback:notice-center' %}">
-                <span class="action-bullet">✉</span>
-                <div>
-                    <strong>發布通告</strong>
-                    <small>通知客戶更新</small>
+                    <strong>查看文字洞察</strong>
+                    <p>整理文字回饋、關鍵字與主題分類</p>
                 </div>
             </a>
         </div>
     </article>
 </section>
 
-<section class="board-card">
-    <h2>最近問卷</h2>
-    {% if recent_surveys %}
-        <div class="survey-table">
-            {% for survey in recent_surveys %}
-                <a class="survey-row" href="{% url 'feedback:survey-builder' survey.slug %}">
-                    <div>
-                        <strong>{{ survey.title }}</strong>
-                        <small>{{ survey.description|default:"尚未補充說明" }}</small>
-                    </div>
-                    <span>{{ survey.submissions.count }} 份回覆</span>
-                </a>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-card">尚無活動記錄，建立第一份問卷開始收集回饋吧。</div>
-    {% endif %}
+<section class="manager-panel">
+    <div class="panel-head">
+        <h2>近期問卷</h2>
+    </div>
+    <div class="record-list">
+        {% for survey in recent_surveys %}
+            <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+                <div>
+                    <strong>{{ survey.title }}</strong>
+                    <p>{{ survey.description|default:"此問卷已建立，可持續編輯與追蹤回覆。" }}</p>
+                </div>
+                <div class="record-meta">
+                    <span class="muted-text">{{ survey.submissions.count }} 份回覆</span>
+                </div>
+            </a>
+        {% empty %}
+            <div class="empty-card">
+                <div>
+                    <h3>還沒有問卷資料</h3>
+                    <p>先建立第一份問卷，後台指標就會開始累積。</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}

@@ -1,35 +1,39 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}問卷管理{% endblock %}
+{% block title %}問卷管理 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header with-action">
+<section class="manager-header manager-header-inline">
     <div>
+        <p class="section-kicker">Survey Management</p>
         <h1>問卷管理</h1>
-        <p>建立、管理與追蹤回饋問卷</p>
+        <p>維護問卷、檢查回覆量與進入編輯器。</p>
     </div>
-    <a class="primary-action" href="{% url 'feedback:survey-create' %}">＋ 建立問卷</a>
+    <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
 </section>
 
-<section class="board-card">
-    {% if surveys %}
-        <div class="survey-table">
-            {% for survey in surveys %}
-                <a class="survey-row" href="{% url 'feedback:survey-builder' survey.slug %}">
-                    <div>
-                        <strong>{{ survey.title }}</strong>
-                        <small>{{ survey.questions.count }} 題 / {{ survey.submissions.count }} 份回覆 / {{ survey.get_access_mode_display }}</small>
-                    </div>
-                    <span>編輯表單</span>
-                </a>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <span class="empty-plus">＋</span>
-            <h2>尚無問卷</h2>
-            <p>點擊上方按鈕建立第一份問卷</p>
-        </div>
-    {% endif %}
+<section class="manager-panel">
+    <div class="record-list">
+        {% for survey in surveys %}
+            <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+                <div>
+                    <strong>{{ survey.title }}</strong>
+                    <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆 | {{ survey.get_access_mode_display }}</p>
+                </div>
+                <div class="record-meta">
+                    <span class="pill {% if survey.is_active %}pill-active{% endif %}">
+                        {% if survey.is_active %}啟用中{% else %}已停用{% endif %}
+                    </span>
+                </div>
+            </a>
+        {% empty %}
+            <div class="empty-card">
+                <div>
+                    <h3>尚未建立任何問卷</h3>
+                    <p>從第一份問卷開始，逐步把蒐集、分析與改善流程接起來。</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}

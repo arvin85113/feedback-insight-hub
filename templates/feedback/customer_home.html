@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}顧客中心 | FeedBack IQ{% endblock %}
+
+{% block content %}
+<section class="portal-header">
+    <div>
+        <p class="section-kicker">Customer Portal</p>
+        <h1>我的填答與通知</h1>
+        <p>查看您已提交的問卷、接收過的改善通知，並管理是否接受未來更新。</p>
+    </div>
+    <div class="portal-actions">
+        <a class="button button-ghost" href="{% url 'accounts:preferences' %}">通知設定</a>
+        <a class="button button-primary" href="{% url 'feedback:customer-notifications' %}">查看所有通知</a>
+    </div>
+</section>
+
+<section class="portal-grid">
+    <article class="surface-card stat-surface">
+        <span>已提交問卷</span>
+        <strong>{{ submission_count }}</strong>
+    </article>
+    <article class="surface-card stat-surface">
+        <span>同意追蹤的填答</span>
+        <strong>{{ active_follow_up_count }}</strong>
+    </article>
+    <article class="surface-card stat-surface">
+        <span>帳號通知狀態</span>
+        <strong>{% if user.notification_opt_in %}開啟{% else %}關閉{% endif %}</strong>
+    </article>
+</section>
+
+<section class="portal-grid portal-grid-wide">
+    <article class="surface-card">
+        <div class="card-topline">
+            <h2>我填過的問卷</h2>
+        </div>
+        <div class="record-list">
+            {% for submission in submissions %}
+                <div class="record-row">
+                    <div>
+                        <strong>{{ submission.survey.title }}</strong>
+                        <p>{{ submission.submitted_at|date:"Y/m/d H:i" }} 送出</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="pill {% if submission.consent_follow_up %}pill-active{% endif %}">
+                            {% if submission.consent_follow_up %}接收更新{% else %}未接收更新{% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>目前還沒有填答紀錄</h3>
+                        <p>當您提交問卷後，紀錄會出現在這裡。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="surface-card">
+        <div class="card-topline">
+            <h2>最近通知</h2>
+        </div>
+        <div class="record-list">
+            {% for notice in notices %}
+                <div class="record-row">
+                    <div>
+                        <strong>{{ notice.improvement.title }}</strong>
+                        <p>{{ notice.submission.survey.title }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="muted-text">{{ notice.sent_at|date:"Y/m/d" }}</span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>目前沒有收到通知</h3>
+                        <p>若管理端對您填過的問卷有改善更新，會顯示在這裡。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

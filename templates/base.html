@@ -4,36 +4,46 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Feedback Insight Hub{% endblock %}</title>
+    <title>{% block title %}FeedBack IQ{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body class="{% block body_class %}public-body{% endblock %}">
+<body class="{% block body_class %}site-body{% endblock %}">
     {% block shell %}
         <header class="site-header">
-            <div class="wrap header-inner">
-                <a class="brand" href="{% url 'feedback:home' %}">Feedback Insight Hub</a>
-                <nav class="nav">
+            <div class="shell-wrap site-header-inner">
+                <a class="brand-mark" href="{% url 'feedback:home' %}">
+                    <span class="brand-mark-icon">F</span>
+                    <span>
+                        <strong>FeedBack IQ</strong>
+                        <small>Customer Intelligence Platform</small>
+                    </span>
+                </a>
+                <nav class="site-nav">
                     <a href="{% url 'feedback:home' %}">首頁</a>
                     {% if user.is_authenticated %}
                         {% if user.is_manager %}
-                            <a href="{% url 'feedback:dashboard' %}">後台儀表板</a>
+                            <a href="{% url 'feedback:dashboard' %}">管理後台</a>
+                        {% else %}
+                            <a href="{% url 'feedback:customer-home' %}">顧客中心</a>
+                            <a href="{% url 'accounts:preferences' %}">通知設定</a>
                         {% endif %}
                         <form method="post" action="{% url 'accounts:logout' %}">
                             {% csrf_token %}
-                            <button type="submit" class="link-button">登出</button>
+                            <button type="submit" class="button button-ghost">登出</button>
                         </form>
                     {% else %}
                         <a href="{% url 'accounts:login' %}">登入</a>
-                        <a href="{% url 'accounts:signup' %}">註冊</a>
+                        <a class="button button-primary button-small" href="{% url 'accounts:signup' %}">開始使用</a>
                     {% endif %}
                 </nav>
             </div>
         </header>
-        <main class="wrap">
+
+        <main class="shell-wrap site-main">
             {% if messages %}
-                <section class="messages">
+                <section class="flash-stack">
                     {% for message in messages %}
-                        <div class="message">{{ message }}</div>
+                        <div class="flash-message">{{ message }}</div>
                     {% endfor %}
                 </section>
             {% endif %}

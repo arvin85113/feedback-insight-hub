@@ -40,7 +40,7 @@ class SurveyFormBuilder(forms.Form):
 class QuickAccessForm(forms.Form):
     respondent_name = forms.CharField(label="姓名", max_length=120, required=False)
     respondent_email = forms.EmailField(label="Email", required=False)
-    consent_follow_up = forms.BooleanField(label="同意後續聯繫", required=False)
+    consent_follow_up = forms.BooleanField(label="願意接收後續改善通知", required=False)
 
 
 class ImprovementUpdateForm(forms.ModelForm):
@@ -48,10 +48,10 @@ class ImprovementUpdateForm(forms.ModelForm):
         model = ImprovementUpdate
         fields = ("title", "summary", "related_category", "send_global_notice")
         labels = {
-            "title": "改進標題",
-            "summary": "更新內容",
-            "related_category": "對應回饋分類",
-            "send_global_notice": "同步發送全域通知",
+            "title": "改善主題",
+            "summary": "改善內容摘要",
+            "related_category": "關聯分類",
+            "send_global_notice": "是否發送通知",
         }
 
 
@@ -68,13 +68,13 @@ class SurveyCreateForm(forms.ModelForm):
             "is_active",
         )
         labels = {
-            "title": "表單名稱",
-            "slug": "網址識別碼",
-            "description": "表單說明",
-            "access_mode": "收集模式",
+            "title": "問卷標題",
+            "slug": "網址代稱",
+            "description": "問卷說明",
+            "access_mode": "填答模式",
             "thank_you_email_enabled": "送出後寄送感謝信",
-            "improvement_tracking_enabled": "啟用改進追蹤",
-            "is_active": "啟用表單",
+            "improvement_tracking_enabled": "啟用改善追蹤",
+            "is_active": "啟用問卷",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
@@ -96,20 +96,20 @@ class QuestionCreateForm(forms.ModelForm):
         )
         labels = {
             "title": "問題標題",
-            "help_text": "輔助說明",
+            "help_text": "補充說明",
             "kind": "題型",
             "data_type": "資料型態",
-            "options_text": "選項清單",
+            "options_text": "選項內容",
             "is_required": "必填",
-            "enable_keyword_tracking": "納入文字關鍵字分析",
-            "order": "顯示順序",
+            "enable_keyword_tracking": "啟用文字關鍵字追蹤",
+            "order": "排序",
         }
         widgets = {
             "options_text": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "一行一個選項\n非常滿意\n滿意\n普通\n不滿意",
+                    "placeholder": "請一行填一個選項\n例如：\n非常滿意\n滿意\n普通",
                 }
             ),
-            "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照最近一次使用經驗作答"}),
+            "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照您最近一次使用經驗作答"}),
         }

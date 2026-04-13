@@ -7,6 +7,6 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("平台資訊", {"fields": ("role", "organization")}),
+        ("Platform Settings", {"fields": ("role", "organization", "notification_opt_in")}),
     )
-    list_display = ("username", "email", "role", "organization", "is_staff")
+    list_display = ("username", "email", "role", "organization", "notification_opt_in", "is_staff")

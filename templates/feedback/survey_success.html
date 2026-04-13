@@ -1,9 +1,17 @@
 {% extends "base.html" %}
 
+{% block title %}送出成功 | FeedBack IQ{% endblock %}
+
 {% block content %}
-<section class="panel">
-    <h1>回饋已送出</h1>
-    <p>系統已完成接收，若有填寫 Email 且問卷啟用感謝信，會同步寄出通知。</p>
-    <a class="button" href="{% url 'feedback:home' %}">返回首頁</a>
+<section class="success-panel">
+    <p class="section-kicker">Submitted</p>
+    <h1>已成功送出回饋</h1>
+    <p>感謝您的填寫。若您已同意接收通知，後續若有改善進度會再通知您。</p>
+    <div class="hero-actions">
+        <a class="button button-primary" href="{% url 'feedback:home' %}">返回首頁</a>
+        {% if user.is_authenticated and not user.is_manager %}
+            <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">前往顧客中心</a>
+        {% endif %}
+    </div>
 </section>
 {% endblock %}

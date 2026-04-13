@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    CustomerHomeView,
+    CustomerNotificationsView,
     DashboardView,
     HomeView,
     ImprovementCreateView,
@@ -20,6 +22,8 @@ app_name = "feedback"
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
+    path("app/", CustomerHomeView.as_view(), name="customer-home"),
+    path("app/notifications/", CustomerNotificationsView.as_view(), name="customer-notifications"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("dashboard/forms/", SurveyManagerView.as_view(), name="survey-manager"),
     path("dashboard/forms/new/", SurveyCreateView.as_view(), name="survey-create"),

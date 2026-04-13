@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -35,14 +35,19 @@ class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         return self.request.user.is_authenticated and self.request.user.is_manager
 
 
+class CustomerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_authenticated and not self.request.user.is_manager
+
+
 class DashboardBaseMixin(ManagerRequiredMixin):
     dashboard_nav = [
-        ("feedback:dashboard", "總覽儀表板", "grid"),
-        ("feedback:survey-manager", "問卷管理", "clipboard"),
-        ("feedback:stats-overview", "統計分析", "chart"),
-        ("feedback:text-analysis", "文字分析", "message"),
-        ("feedback:improvement-list", "改進追蹤", "wrench"),
-        ("feedback:notice-center", "通告管理", "send"),
+        ("feedback:dashboard", "Overview", "grid"),
+        ("feedback:survey-manager", "Surveys", "clipboard"),
+        ("feedback:stats-overview", "Analytics", "chart"),
+        ("feedback:text-analysis", "Text Analysis", "message"),
+        ("feedback:improvement-list", "Improvements", "wrench"),
+        ("feedback:notice-center", "Announcements", "send"),
     ]
 
     active_section = ""
@@ -60,7 +65,62 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["surveys"] = Survey.objects.filter(is_active=True)
+        surveys = Survey.objects.filter(is_active=True).annotate(response_total=Count("submissions"))
+        context.update(
+            {
+                "surveys": surveys[:6],
+                "active_survey_count": surveys.count(),
+                "response_count": FeedbackSubmission.objects.count(),
+                "improvement_count": ImprovementUpdate.objects.count(),
+                "managed_clients": max(12, surveys.count() * 3 or 12),
+            }
+        )
+        return context
+
+
+class CustomerHomeView(CustomerRequiredMixin, TemplateView):
+    template_name = "feedback/customer_home.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        submissions = (
+            FeedbackSubmission.objects.filter(user=self.request.user)
+            .select_related("survey")
+            .prefetch_related("answers")
+            .order_by("-submitted_at")
+        )
+        notices = (
+            ImprovementDispatch.objects.filter(submission__user=self.request.user)
+            .select_related("improvement", "submission", "submission__survey")
+            .order_by("-sent_at")
+        )
+        context.update(
+            {
+                "submissions": submissions,
+                "notices": notices[:10],
+                "submission_count": submissions.count(),
+                "active_follow_up_count": submissions.filter(consent_follow_up=True).count(),
+            }
+        )
+        return context
+
+
+class CustomerNotificationsView(CustomerRequiredMixin, TemplateView):
+    template_name = "feedback/customer_notifications.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        notices = (
+            ImprovementDispatch.objects.filter(submission__user=self.request.user)
+            .select_related("improvement", "submission", "submission__survey")
+            .order_by("-sent_at")
+        )
+        context.update(
+            {
+                "notices": notices,
+                "notification_opt_in": self.request.user.notification_opt_in,
+            }
+        )
         return context
 
 
@@ -90,10 +150,30 @@ class DashboardView(DashboardBaseMixin, TemplateView):
         context.update(
             {
                 "metrics": [
-                    {"label": "問卷總數", "value": total_surveys, "hint": f"{surveys.filter(is_active=True).count()} 份進行中", "accent": "blue"},
-                    {"label": "回覆總數", "value": total_submissions, "hint": "所有問卷", "accent": "violet"},
-                    {"label": "改進項目", "value": total_improvements, "hint": f"{improvements.filter(emailed_at__isnull=False).count()} 項已通知", "accent": "green"},
-                    {"label": "平均回覆數", "value": avg_responses, "hint": "每份問卷", "accent": "amber"},
+                    {
+                        "label": "Active surveys",
+                        "value": total_surveys,
+                        "hint": f"{surveys.filter(is_active=True).count()} currently accepting responses",
+                        "accent": "blue",
+                    },
+                    {
+                        "label": "Total responses",
+                        "value": total_submissions,
+                        "hint": "Latest customer feedback across all forms",
+                        "accent": "violet",
+                    },
+                    {
+                        "label": "Improvement updates",
+                        "value": total_improvements,
+                        "hint": f"{improvements.filter(emailed_at__isnull=False).count()} already notified",
+                        "accent": "green",
+                    },
+                    {
+                        "label": "Average responses",
+                        "value": avg_responses,
+                        "hint": "Average responses per survey",
+                        "accent": "amber",
+                    },
                 ],
                 "daily_counts": daily_counts,
                 "recent_surveys": surveys[:5],
@@ -125,7 +205,7 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, "新問卷已建立，接著加入題目。")
+        messages.success(self.request, "Survey created. You can now add questions and sharing options.")
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -148,9 +228,9 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
         )
         context["responses_count"] = self.object.submissions.count()
         context["builder_tabs"] = [
-            {"key": "questions", "label": "問題"},
-            {"key": "responses", "label": "回覆"},
-            {"key": "settings", "label": "設定"},
+            {"key": "questions", "label": "Questions"},
+            {"key": "responses", "label": "Responses"},
+            {"key": "settings", "label": "Settings"},
         ]
         return context
 
@@ -161,7 +241,7 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
         if action == "delete-question":
             question = get_object_or_404(Question, id=request.POST.get("question_id"), survey=self.object)
             question.delete()
-            messages.success(request, "題目已刪除。")
+            messages.success(request, "Question removed from this survey.")
             return redirect("feedback:survey-builder", slug=self.object.slug)
 
         question_form = QuestionCreateForm(request.POST)
@@ -169,7 +249,7 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
             question = question_form.save(commit=False)
             question.survey = self.object
             question.save()
-            messages.success(request, "題目已加入表單。")
+            messages.success(request, "Question added to the survey.")
             return redirect("feedback:survey-builder", slug=self.object.slug)
 
         context = self.get_context_data(question_form=question_form, object=self.object)
@@ -249,14 +329,21 @@ class SurveyDetailView(DetailView):
     def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
         if self.object.access_mode == Survey.AccessMode.LOGIN and not request.user.is_authenticated:
-            messages.warning(request, "此問卷需要登入後填寫。")
+            messages.warning(request, "This survey requires sign-in before submission.")
             return redirect(f"{reverse('accounts:login')}?next={request.path}")
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["quick_form"] = QuickAccessForm(prefix="meta")
-        context["form"] = SurveyFormBuilder(survey=self.object)
+        initial = {}
+        if self.request.user.is_authenticated:
+            initial = {
+                "respondent_name": self.request.user.get_full_name(),
+                "respondent_email": self.request.user.email,
+                "consent_follow_up": getattr(self.request.user, "notification_opt_in", False),
+            }
+        context["quick_form"] = kwargs.get("quick_form") or QuickAccessForm(prefix="meta", initial=initial)
+        context["form"] = kwargs.get("form") or SurveyFormBuilder(survey=self.object)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -264,12 +351,17 @@ class SurveyDetailView(DetailView):
         quick_form = QuickAccessForm(request.POST, prefix="meta")
         form = SurveyFormBuilder(request.POST, survey=self.object)
         if form.is_valid() and quick_form.is_valid():
+            consent_follow_up = quick_form.cleaned_data["consent_follow_up"]
+            if request.user.is_authenticated and not request.user.is_manager:
+                request.user.notification_opt_in = consent_follow_up
+                request.user.save(update_fields=["notification_opt_in"])
+
             submission = FeedbackSubmission.objects.create(
                 survey=self.object,
                 user=request.user if request.user.is_authenticated else None,
                 respondent_name=quick_form.cleaned_data["respondent_name"],
                 respondent_email=quick_form.cleaned_data["respondent_email"],
-                consent_follow_up=quick_form.cleaned_data["consent_follow_up"],
+                consent_follow_up=consent_follow_up,
                 source=Survey.AccessMode.LOGIN if request.user.is_authenticated else Survey.AccessMode.QUICK,
             )
             for question in self.object.questions.all():
@@ -281,17 +373,15 @@ class SurveyDetailView(DetailView):
 
             if self.object.thank_you_email_enabled and submission.respondent_email:
                 send_mail(
-                    subject=f"感謝您填寫 {self.object.title}",
-                    message="您的回饋已收到，我們將用於後續產品與服務改善。",
+                    subject=f"Thank you for your feedback on {self.object.title}",
+                    message="We have received your response and will use it to improve the experience.",
                     from_email=None,
                     recipient_list=[submission.respondent_email],
                     fail_silently=True,
                 )
             return HttpResponseRedirect(reverse("feedback:survey-success", args=[self.object.slug]))
 
-        context = self.get_context_data(object=self.object)
-        context["form"] = form
-        context["quick_form"] = quick_form
+        context = self.get_context_data(object=self.object, form=form, quick_form=quick_form)
         return self.render_to_response(context)
 
 
@@ -314,27 +404,50 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.survey = self.survey
         response = super().form_valid(form)
-        recipients = self.survey.submissions.filter(consent_follow_up=True).exclude(respondent_email="")
+        recipients = (
+            self.survey.submissions.select_related("user")
+            .filter(Q(consent_follow_up=True) | Q(user__notification_opt_in=True))
+            .exclude(respondent_email="")
+        )
         if form.instance.related_category:
             recipients = recipients.filter(
                 answers__question__survey=self.survey,
                 answers__value__icontains=form.instance.related_category,
             ).distinct()
 
+        sent_count = 0
         for submission in recipients:
-            ImprovementDispatch.objects.get_or_create(
+            if submission.user and not submission.user.notification_opt_in:
+                continue
+            if not submission.consent_follow_up and not (submission.user and submission.user.notification_opt_in):
+                continue
+
+            dispatch, created = ImprovementDispatch.objects.get_or_create(
                 improvement=form.instance,
                 submission=submission,
-                defaults={"personalized_note": f"感謝您先前提出與「{form.instance.related_category or '整體服務'}」相關的意見。"},
+                defaults={
+                    "personalized_note": (
+                        f"You are receiving this update because you opted in to improvements for "
+                        f"{form.instance.related_category or self.survey.title}."
+                    )
+                },
             )
+            if not created:
+                continue
+
             send_mail(
-                subject=f"{self.survey.title} 改進更新通知",
-                message=f"{form.instance.summary}\n\n感謝您先前的回饋，這次更新與您的意見直接相關。",
+                subject=f"{self.survey.title} improvement update",
+                message=f"{form.instance.title}\n\n{form.instance.summary}",
                 from_email=None,
                 recipient_list=[submission.respondent_email],
                 fail_silently=True,
             )
-        messages.success(self.request, "改進追蹤通知已建立。")
+            sent_count += 1
+
+        form.instance.emailed_at = timezone.now() if sent_count else form.instance.emailed_at
+        if sent_count:
+            form.instance.save(update_fields=["emailed_at"])
+        messages.success(self.request, "Improvement update created and dispatched.")
         return response
 
     def get_success_url(self):

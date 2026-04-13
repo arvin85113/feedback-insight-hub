@@ -1,21 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}登入{% endblock %}
+{% block title %}登入 | FeedBack IQ{% endblock %}
 
 {% block content %}
-<section class="panel auth-panel">
-    <h1>登入平台</h1>
-    <p>管理人員可檢視後台儀表板，客戶可填寫正式問卷。</p>
-    <form method="post" class="survey-form">
-        {% csrf_token %}
-        {% for field in form %}
-            <div class="field-block">
-                {{ field.label_tag }}
-                {{ field }}
-                {{ field.errors }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="button">登入</button>
-    </form>
+<section class="auth-layout">
+    <article class="auth-copy">
+        <p class="section-kicker">Secure Access</p>
+        <h1>登入 FeedBack IQ</h1>
+        <p>
+            管理者可進入營運後台查看問卷、分析與改善追蹤；
+            顧客登入後可查看自己填寫過的問卷與是否接收更新通知。
+        </p>
+        <ul class="feature-list">
+            <li>依身分自動分流到對應入口</li>
+            <li>保留既有問卷與改善通知功能</li>
+            <li>讓前台與後台使用同一套品牌語言</li>
+        </ul>
+    </article>
+    <article class="auth-card">
+        <h2>帳號登入</h2>
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field-block">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button button-primary button-wide">登入</button>
+        </form>
+        <p class="auth-link-row">
+            還沒有帳號？
+            <a href="{% url 'accounts:signup' %}">建立顧客帳號</a>
+        </p>
+    </article>
 </section>
 {% endblock %}

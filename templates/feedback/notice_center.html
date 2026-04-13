@@ -1,31 +1,43 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}通告管理{% endblock %}
+{% block title %}通知中心 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header with-action">
+<section class="manager-header manager-header-inline">
     <div>
-        <h1>通告管理</h1>
-        <p>發布全域或針對性通告給客戶</p>
+        <p class="section-kicker">Notice Center</p>
+        <h1>通知中心</h1>
+        <p>這裡彙整所有可對外發送的改善通知來源，方便管理端追蹤顧客更新節奏與問卷關聯。</p>
     </div>
     {% if survey_list %}
-        <a class="primary-action" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">＋ 建立通告</a>
+        <a class="button button-primary" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">建立新通知</a>
     {% endif %}
 </section>
 
-<section class="board-card">
-    {% if notices %}
-        <div class="stack-list">
-            {% for notice in notices %}
-                <article class="insight-card">
+<section class="manager-panel">
+    <div class="record-list">
+        {% for notice in notices %}
+            <div class="record-row record-row-block">
+                <div>
                     <strong>{{ notice.title }}</strong>
-                    <small>{{ notice.survey.title }}</small>
-                    <p>{{ notice.summary|truncatechars:140 }}</p>
-                </article>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-card">尚無通告，點擊上方建立第一則</div>
-    {% endif %}
+                    <p>{{ notice.survey.title }}</p>
+                    <p>{{ notice.summary|truncatechars:180 }}</p>
+                </div>
+                <div class="record-meta">
+                    <span class="pill {% if notice.emailed_at %}pill-active{% endif %}">
+                        {% if notice.emailed_at %}已寄送{% else %}待寄送{% endif %}
+                    </span>
+                    <p class="muted-text">{{ notice.created_at|date:"Y/m/d H:i" }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-card">
+                <div>
+                    <h3>目前沒有通知資料</h3>
+                    <p>建立第一筆改善通知後，這裡就會開始累積紀錄。</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}

@@ -1,56 +1,111 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}統計分析{% endblock %}
+{% block title %}統計分析 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header with-filter">
+<section class="manager-header manager-header-inline">
     <div>
+        <p class="section-kicker">Analytics</p>
         <h1>統計分析</h1>
-        <p>量化統計與數據視覺化</p>
+        <p>依照問卷快速查看題型、建議分析方法與目前可用的統計摘要，作為後續優化與報告整理的基礎。</p>
     </div>
-    <form method="get" class="toolbar-form">
-        <select name="survey" onchange="this.form.submit()">
-            <option value="">選擇問卷</option>
-            {% for survey in survey_list %}
-                <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
-            {% endfor %}
-        </select>
+    <form method="get" class="form-stack" style="min-width: 280px;">
+        <div class="field-block">
+            <label for="stats-survey">選擇問卷</label>
+            <select id="stats-survey" name="survey" onchange="this.form.submit()">
+                <option value="">請選擇問卷</option>
+                {% for survey in survey_list %}
+                    <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
     </form>
 </section>
 
-<section class="board-card">
-    {% if selected_survey %}
-        <div class="dashboard-grid">
-            <div class="stack-list">
+{% if selected_survey %}
+    <section class="portal-grid">
+        <article class="surface-card stat-surface">
+            <span>目前分析問卷</span>
+            <strong>{{ selected_survey.title }}</strong>
+        </article>
+        <article class="surface-card stat-surface">
+            <span>題目數</span>
+            <strong>{{ question_analysis|length }}</strong>
+        </article>
+        <article class="surface-card stat-surface">
+            <span>統計圖表摘要</span>
+            <strong>{{ charts|length }}</strong>
+        </article>
+    </section>
+
+    <section class="manager-content-grid">
+        <article class="manager-panel">
+            <div class="panel-head">
+                <h2>題目分析建議</h2>
+            </div>
+            <div class="record-list">
                 {% for item in question_analysis %}
-                    <article class="insight-card">
-                        <strong>{{ item.title }}</strong>
-                        <small>{{ item.data_type }}</small>
-                        <p>{{ item.analysis }}</p>
-                    </article>
+                    <div class="record-row record-row-block">
+                        <div>
+                            <strong>{{ item.title }}</strong>
+                            <p>{{ item.data_type }}</p>
+                            <p>{{ item.analysis }}</p>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-card">
+                        <div>
+                            <h3>尚未建立題目</h3>
+                            <p>先到問卷編輯頁新增題目，系統才會提供對應的統計分析建議。</p>
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
-            <div class="stack-list">
+        </article>
+
+        <article class="manager-panel">
+            <div class="panel-head">
+                <h2>統計摘要</h2>
+            </div>
+            <div class="record-list">
                 {% for chart in charts %}
-                    <article class="insight-card">
-                        <strong>{{ chart.question.title }}</strong>
-                        {% if chart.type == "numeric" %}
-                            <p>樣本數 {{ chart.count }} / 平均 {{ chart.avg }} / 最小 {{ chart.min }} / 最大 {{ chart.max }}</p>
-                        {% else %}
-                            <ul class="mini-list">
-                                {% for row in chart.counts %}
-                                    <li>{{ row.value }}：{{ row.total }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </article>
+                    <div class="record-row record-row-block">
+                        <div>
+                            <strong>{{ chart.question.title }}</strong>
+                            {% if chart.type == "numeric" %}
+                                <ul class="feature-list">
+                                    <li>有效樣本數：{{ chart.count }}</li>
+                                    <li>平均值：{{ chart.avg }}</li>
+                                    <li>最小值 / 最大值：{{ chart.min }} / {{ chart.max }}</li>
+                                </ul>
+                            {% else %}
+                                <ul class="feature-list">
+                                    {% for row in chart.counts %}
+                                        <li>{{ row.value }}：{{ row.total }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% empty %}
-                    <div class="empty-card">此問卷尚無可量化資料。</div>
+                    <div class="empty-card">
+                        <div>
+                            <h3>目前沒有可顯示的摘要</h3>
+                            <p>這份問卷可能還沒有作答資料，或題目類型暫時無法形成統計摘要。</p>
+                        </div>
+                    </div>
                 {% endfor %}
+            </div>
+        </article>
+    </section>
+{% else %}
+    <section class="manager-panel">
+        <div class="empty-card">
+            <div>
+                <h3>請先選擇問卷</h3>
+                <p>從右側下拉選單選取一份問卷後，這裡會顯示各題的統計建議與摘要結果。</p>
             </div>
         </div>
-    {% else %}
-        <div class="empty-card">請選擇一份問卷或該問卷尚無數據</div>
-    {% endif %}
-</section>
+    </section>
+{% endif %}
 {% endblock %}

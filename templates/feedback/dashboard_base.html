@@ -1,42 +1,50 @@
 {% extends "base.html" %}
 
-{% block body_class %}dashboard-shell{% endblock %}
+{% block body_class %}dashboard-body{% endblock %}
 
 {% block shell %}
-<div class="dashboard-app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <div class="sidebar-logo">∿</div>
+<div class="manager-shell">
+    <aside class="manager-sidebar">
+        <div class="manager-brand">
+            <div class="manager-brand-icon">F</div>
             <div>
-                <strong>FeedbackIQ</strong>
-                <small>Analytics Platform</small>
+                <strong>FeedBack IQ</strong>
+                <small>Operations Console</small>
             </div>
         </div>
-        <nav class="sidebar-nav">
+        <nav class="manager-nav">
             {% for route, label, icon in dashboard_nav %}
-                <a class="sidebar-link {% if active_section == route %}active{% endif %}" href="{% url route %}">
-                    <span class="sidebar-icon {{ icon }}"></span>
+                <a class="manager-nav-link {% if active_section == route %}active{% endif %}" href="{% url route %}">
+                    <span class="manager-nav-icon">{{ forloop.counter }}</span>
                     <span>{{ label }}</span>
                 </a>
             {% endfor %}
         </nav>
+        <div class="manager-sidebar-foot">
+            <p>以 Base44 風格資訊密度為方向，保留你現有的 Django 功能。</p>
+        </div>
     </aside>
 
-    <div class="dashboard-main">
-        <header class="dashboard-topbar">
-            <div></div>
-            <div class="dashboard-user">
-                <span class="notification-dot"></span>
-                <span class="avatar">{{ user.first_name|default:user.username|first|upper }}</span>
-                <span>{{ user.get_full_name|default:user.username }}</span>
+    <div class="manager-main">
+        <header class="manager-topbar">
+            <div>
+                <p class="section-kicker">Manager Workspace</p>
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+            </div>
+            <div class="manager-topbar-actions">
+                <a class="button button-ghost" href="{% url 'feedback:home' %}">查看官網</a>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-primary button-small">登出</button>
+                </form>
             </div>
         </header>
 
-        <main class="dashboard-content">
+        <main class="manager-content">
             {% if messages %}
-                <section class="dashboard-messages">
+                <section class="flash-stack">
                     {% for message in messages %}
-                        <div class="message">{{ message }}</div>
+                        <div class="flash-message">{{ message }}</div>
                     {% endfor %}
                 </section>
             {% endif %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}通知紀錄 | FeedBack IQ{% endblock %}
+
+{% block content %}
+<section class="portal-header">
+    <div>
+        <p class="section-kicker">Notification History</p>
+        <h1>改善通知紀錄</h1>
+        <p>以下是您已收到的改善更新通知，系統會依您目前的通知偏好決定後續是否寄送。</p>
+    </div>
+    <div class="portal-actions">
+        <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">返回顧客中心</a>
+        <a class="button button-primary" href="{% url 'accounts:preferences' %}">
+            {% if notification_opt_in %}通知已開啟{% else %}前往開啟通知{% endif %}
+        </a>
+    </div>
+</section>
+
+<section class="surface-card">
+    <div class="record-list">
+        {% for notice in notices %}
+            <div class="record-row record-row-block">
+                <div>
+                    <strong>{{ notice.improvement.title }}</strong>
+                    <p>{{ notice.submission.survey.title }} | {{ notice.sent_at|date:"Y/m/d H:i" }}</p>
+                    <p>{{ notice.improvement.summary }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-card">
+                <div>
+                    <h3>尚無通知紀錄</h3>
+                    <p>未來若有改善進度，會集中顯示在這裡。</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

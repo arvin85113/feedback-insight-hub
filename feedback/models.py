@@ -11,9 +11,9 @@ from django.utils import timezone
 
 class Survey(models.Model):
     class AccessMode(models.TextChoices):
-        LOGIN = "login", "登入填寫"
-        QUICK = "quick", "快捷收集"
-        HYBRID = "hybrid", "雙模式"
+        LOGIN = "login", "登入後填答"
+        QUICK = "quick", "快速填答"
+        HYBRID = "hybrid", "混合模式"
 
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
@@ -37,17 +37,17 @@ class Survey(models.Model):
 
 class Question(models.Model):
     class Kind(models.TextChoices):
-        SHORT_TEXT = "short_text", "短文"
-        LONG_TEXT = "long_text", "長文"
+        SHORT_TEXT = "short_text", "短答"
+        LONG_TEXT = "long_text", "長答"
         SINGLE_CHOICE = "single_choice", "單選"
         MULTIPLE_CHOICE = "multiple_choice", "多選"
         INTEGER = "integer", "整數"
-        DECIMAL = "decimal", "連續數值"
+        DECIMAL = "decimal", "小數"
         SCALE = "scale", "量表"
 
     class DataType(models.TextChoices):
         NOMINAL = "nominal", "名目"
-        ORDINAL = "ordinal", "序位"
+        ORDINAL = "ordinal", "順序"
         DISCRETE = "discrete", "離散"
         CONTINUOUS = "continuous", "連續"
         TEXT = "text", "文字"
@@ -57,7 +57,7 @@ class Question(models.Model):
     help_text = models.CharField(max_length=255, blank=True)
     kind = models.CharField(max_length=20, choices=Kind.choices)
     data_type = models.CharField(max_length=20, choices=DataType.choices)
-    options_text = models.TextField(blank=True, help_text="單選或多選使用，一行一個選項")
+    options_text = models.TextField(blank=True, help_text="選項題請一行填一個選項。")
     is_required = models.BooleanField(default=True)
     enable_keyword_tracking = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
@@ -100,7 +100,7 @@ class FeedbackSubmission(models.Model):
             return self.respondent_name
         if self.user:
             return self.user.get_full_name() or self.user.username
-        return "匿名受訪者"
+        return "匿名填答者"
 
 
 class Answer(models.Model):
@@ -157,7 +157,7 @@ class ImprovementDispatch(models.Model):
 
 def tokenize_feedback(text):
     tokens = re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", text.lower())
-    stop_words = {"我們", "你們", "產品", "系統", "希望", "可以", "這個", "因為", "feedback"}
+    stop_words = {"我們", "你們", "這個", "那個", "真的", "非常", "希望", "可以", "feedback"}
     return [token for token in tokens if token not in stop_words]
 
 
@@ -177,7 +177,7 @@ def keyword_summary(survey):
             {
                 "keyword": keyword,
                 "count": count,
-                "category": mapping.category if mapping else "待分類",
+                "category": mapping.category if mapping else "未分類",
             }
         )
     return categories
@@ -213,9 +213,9 @@ def chart_summary(survey):
 
 def recommend_analysis(question):
     if question.data_type == Question.DataType.CONTINUOUS:
-        return "可送入相關分析、T 檢定或 ANOVA 模組"
+        return "適合使用平均數、標準差、t 檢定或 ANOVA 進行比較。"
     if question.data_type in {Question.DataType.NOMINAL, Question.DataType.ORDINAL}:
-        return "適合交叉分析、卡方檢定與描述性統計"
+        return "適合使用比例分布、交叉分析、卡方檢定與排序觀察。"
     if question.data_type == Question.DataType.TEXT:
-        return "適合關鍵字萃取、文字雲與質性分類"
-    return "可先以描述性統計與圖表呈現"
+        return "適合做關鍵字萃取、主題分類、情緒摘要與改善建議整理。"
+    return "建議先觀察分布與回答品質，再決定統計或質性分析方式。"

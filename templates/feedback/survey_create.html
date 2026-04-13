@@ -1,27 +1,30 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}建立問卷{% endblock %}
+{% block title %}建立新問卷 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header">
+<section class="manager-header">
     <div>
-        <h1>建立問卷</h1>
-        <p>先設定表單標題、模式與基本配置，再進入題目編排</p>
+        <p class="section-kicker">Survey Setup</p>
+        <h1>建立新問卷</h1>
+        <p>先建立問卷基本資訊，再進入編輯器配置題目、開放方式與回饋後的通知流程。</p>
     </div>
 </section>
 
-<section class="google-form-shell">
-    <form method="post" class="google-meta-card">
+<section class="manager-panel">
+    <form method="post" class="form-stack">
         {% csrf_token %}
-        <div class="form-title-band"></div>
         {% for field in form %}
             <div class="field-block">
                 {{ field.label_tag }}
                 {{ field }}
+                {% if field.help_text %}
+                    <p class="muted-text">{{ field.help_text }}</p>
+                {% endif %}
                 {{ field.errors }}
             </div>
         {% endfor %}
-        <button type="submit" class="primary-action wide">建立並開始編輯</button>
+        <button type="submit" class="button button-primary">建立問卷並進入編輯器</button>
     </form>
 </section>
 {% endblock %}

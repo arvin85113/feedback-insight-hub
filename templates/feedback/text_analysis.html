@@ -1,54 +1,104 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}文字分析{% endblock %}
+{% block title %}文字分析 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="section-header with-filter">
+<section class="manager-header manager-header-inline">
     <div>
+        <p class="section-kicker">Text Analysis</p>
         <h1>文字分析</h1>
-        <p>質性回饋文字雲與關鍵字分類</p>
+        <p>彙整文字題回覆中的高頻關鍵字，協助管理端快速掌握顧客聲音與潛在的改善主題。</p>
     </div>
-    <form method="get" class="toolbar-form grouped">
-        <select name="survey">
-            <option value="">選擇問卷</option>
-            {% for survey in survey_list %}
-                <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="primary-action compact">執行分析</button>
+    <form method="get" class="form-stack" style="min-width: 320px;">
+        <div class="field-block">
+            <label for="text-survey">選擇問卷</label>
+            <select id="text-survey" name="survey">
+                <option value="">請選擇問卷</option>
+                {% for survey in survey_list %}
+                    <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="button button-primary">開始分析</button>
     </form>
 </section>
 
-<section class="board-card">
-    {% if selected_survey %}
-        <div class="keyword-cloud large">
-            {% for keyword in keywords %}
-                <span class="keyword-chip">{{ keyword.keyword }}<small>{{ keyword.count }}</small></span>
-            {% empty %}
-                <div class="empty-card">執行分析後將顯示文字雲</div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-card">執行分析後將顯示文字雲</div>
-    {% endif %}
-</section>
+{% if selected_survey %}
+    <section class="portal-grid">
+        <article class="surface-card stat-surface">
+            <span>目前分析問卷</span>
+            <strong>{{ selected_survey.title }}</strong>
+        </article>
+        <article class="surface-card stat-surface">
+            <span>文字題數量</span>
+            <strong>{{ text_questions|length }}</strong>
+        </article>
+        <article class="surface-card stat-surface">
+            <span>已整理關鍵字</span>
+            <strong>{{ keywords|length }}</strong>
+        </article>
+    </section>
 
-<section class="subsection-header">
-    <h2>回饋分類</h2>
-</section>
+    <section class="manager-content-grid">
+        <article class="manager-panel">
+            <div class="panel-head">
+                <h2>關鍵字摘要</h2>
+            </div>
+            <div class="card-grid">
+                {% for keyword in keywords %}
+                    <article class="surface-card">
+                        <div class="card-topline">
+                            <span class="pill">{{ keyword.category }}</span>
+                            <span class="muted-text">{{ keyword.count }} 次</span>
+                        </div>
+                        <h3>{{ keyword.keyword }}</h3>
+                        <p>可作為後續建立改善主題、公告通知與管理報告的索引依據。</p>
+                    </article>
+                {% empty %}
+                    <div class="empty-card">
+                        <div>
+                            <h3>目前沒有分析結果</h3>
+                            <p>請先確認此問卷已有文字題回覆，之後即可在此檢視關鍵字彙整。</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
 
-<section class="board-card">
-    {% if keywords %}
-        <div class="category-grid">
-            {% for keyword in keywords %}
-                <article class="insight-card">
-                    <strong>{{ keyword.category }}</strong>
-                    <p>{{ keyword.keyword }}</p>
-                </article>
-            {% endfor %}
+        <article class="manager-panel">
+            <div class="panel-head">
+                <h2>文字題範圍</h2>
+            </div>
+            <div class="record-list">
+                {% for question in text_questions %}
+                    <div class="record-row record-row-block">
+                        <div>
+                            <strong>{{ question.title }}</strong>
+                            <p>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</p>
+                            {% if question.help_text %}
+                                <p>{{ question.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-card">
+                        <div>
+                            <h3>這份問卷沒有文字題</h3>
+                            <p>如果要進行回饋文字分析，建議在問卷中加入短答或長答題型。</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+{% else %}
+    <section class="manager-panel">
+        <div class="empty-card">
+            <div>
+                <h3>請先選擇問卷</h3>
+                <p>選取問卷後，系統會顯示文字題範圍與目前已整理的關鍵字結果。</p>
+            </div>
         </div>
-    {% else %}
-        <div class="empty-card">點擊「執行分析」以產生分類（需要文字型問題與回覆）</div>
-    {% endif %}
-</section>
+    </section>
+{% endif %}
 {% endblock %}
