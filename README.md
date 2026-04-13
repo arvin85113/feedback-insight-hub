@@ -1,6 +1,6 @@
 # Feedback Insight Hub
 
-以 Django 製作的「使用者回饋與統計分析平台」專題骨架，適合直接發布到 GitHub，並部署到 Render。
+以 Django 製作的「使用者回饋與統計分析平台」專題骨架，目前發布至 GitHub，並部署於 Render。
 
 ## 專題定位
 
