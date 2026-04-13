@@ -6,25 +6,41 @@
 <section class="manager-header">
     <div>
         <p class="section-kicker">Improvement Update</p>
-        <h1>{{ survey.title }} 的改善通知</h1>
-        <p>建立一筆正式的改善更新，系統會依據顧客填答時的通知選擇與平台偏好決定是否寄送。</p>
+        <h1>{{ survey.title }} 改善通知</h1>
+        <p>把回饋轉成正式更新內容，對外說明已處理的問題、改善方向與通知對象。</p>
     </div>
 </section>
 
-<section class="manager-panel">
-    <form method="post" class="form-stack">
-        {% csrf_token %}
-        {% for field in form %}
-            <div class="field-block">
-                {{ field.label_tag }}
-                {{ field }}
-                {% if field.help_text %}
-                    <p class="muted-text">{{ field.help_text }}</p>
-                {% endif %}
-                {{ field.errors }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="button button-primary">建立改善通知</button>
-    </form>
+<section class="manager-dual-grid">
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>通知內容</h2>
+        </div>
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field-block">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="muted-text">{{ field.help_text }}</p>
+                    {% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button button-primary">建立改善通知</button>
+        </form>
+    </article>
+
+    <article class="manager-panel muted-card">
+        <div class="panel-head">
+            <h2>發送提醒</h2>
+        </div>
+        <ul class="feature-list compact-list">
+            <li>標題請直接描述「做了什麼改善」，不要只寫內部代號。</li>
+            <li>摘要建議交代處理內容、影響範圍與顧客可感知的變化。</li>
+            <li>若指定分類，系統會優先通知與該主題相關的填答者。</li>
+        </ul>
+    </article>
 </section>
 {% endblock %}

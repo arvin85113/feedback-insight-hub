@@ -7,7 +7,7 @@
     <div>
         <p class="section-kicker">Notice Center</p>
         <h1>通知中心</h1>
-        <p>這裡彙整所有可對外發送的改善通知來源，方便管理端追蹤顧客更新節奏與問卷關聯。</p>
+        <p>查看哪些改善更新已對外發布，並用同一個列表掌握通知素材與時間點。</p>
     </div>
     {% if survey_list %}
         <a class="button button-primary" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">建立新通知</a>
@@ -17,7 +17,7 @@
 <section class="manager-panel">
     <div class="record-list">
         {% for notice in notices %}
-            <div class="record-row record-row-block">
+            <div class="record-row record-row-stack">
                 <div>
                     <strong>{{ notice.title }}</strong>
                     <p>{{ notice.survey.title }}</p>
@@ -25,7 +25,7 @@
                 </div>
                 <div class="record-meta">
                     <span class="pill {% if notice.emailed_at %}pill-active{% endif %}">
-                        {% if notice.emailed_at %}已寄送{% else %}待寄送{% endif %}
+                        {% if notice.emailed_at %}已寄送{% else %}草稿中{% endif %}
                     </span>
                     <p class="muted-text">{{ notice.created_at|date:"Y/m/d H:i" }}</p>
                 </div>
@@ -33,8 +33,8 @@
         {% empty %}
             <div class="empty-card">
                 <div>
-                    <h3>目前沒有通知資料</h3>
-                    <p>建立第一筆改善通知後，這裡就會開始累積紀錄。</p>
+                    <h3>目前沒有通知內容</h3>
+                    <p>建立改善更新後，這裡會作為管理端的通知總覽入口。</p>
                 </div>
             </div>
         {% endfor %}

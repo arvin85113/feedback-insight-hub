@@ -5,8 +5,8 @@
 {% block content %}
 <section class="success-panel">
     <p class="section-kicker">Submitted</p>
-    <h1>已成功送出回饋</h1>
-    <p>感謝您的填寫。若您已同意接收通知，後續若有改善進度會再通知您。</p>
+    <h1>回饋已成功送出</h1>
+    <p>感謝你的意見。我們會將回覆納入後續分析，若你已同意接收通知，之後也會收到改善更新。</p>
     <div class="hero-actions">
         <a class="button button-primary" href="{% url 'feedback:home' %}">返回首頁</a>
         {% if user.is_authenticated and not user.is_manager %}

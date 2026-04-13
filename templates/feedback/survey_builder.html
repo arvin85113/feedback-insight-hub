@@ -1,58 +1,62 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}{{ survey.title }} | 問卷編輯器{% endblock %}
+{% block title %}{{ survey.title }} | 問卷編排{% endblock %}
 
 {% block dashboard_content %}
 <section class="manager-header">
     <div>
         <p class="section-kicker">Survey Builder</p>
         <h1>{{ survey.title }}</h1>
-        <p>{{ survey.description|default:"這裡負責管理題目結構、題型與問卷的整體資料蒐集方式。" }}</p>
+        <p>{{ survey.description|default:"這份問卷尚未補充說明，可在建立後再逐步補齊題目結構與引導文字。" }}</p>
     </div>
 </section>
 
-<section class="portal-grid">
-    <article class="surface-card stat-surface">
-        <span>開放方式</span>
+<section class="kpi-strip">
+    <article class="kpi-chip">
+        <span>開放模式</span>
         <strong>{{ survey.get_access_mode_display }}</strong>
     </article>
-    <article class="surface-card stat-surface">
-        <span>題目數</span>
+    <article class="kpi-chip">
+        <span>題目數量</span>
         <strong>{{ survey.questions.count }}</strong>
     </article>
-    <article class="surface-card stat-surface">
-        <span>作答數</span>
+    <article class="kpi-chip">
+        <span>目前回覆數</span>
         <strong>{{ responses_count }}</strong>
     </article>
 </section>
 
 <section class="manager-panel">
-    <div class="panel-head">
-        <h2>編輯區塊</h2>
-    </div>
     <div class="card-topline">
-        {% for tab in builder_tabs %}
-            <span class="pill {% if tab.key == 'questions' %}pill-active{% endif %}">{{ tab.label }}</span>
-        {% endfor %}
+        <h2>編排工作區</h2>
+        <div class="card-topline">
+            {% for tab in builder_tabs %}
+                <span class="pill {% if tab.key == 'questions' %}pill-active{% endif %}">{{ tab.label }}</span>
+            {% endfor %}
+        </div>
     </div>
 </section>
 
 <section class="manager-content-grid">
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>現有題目</h2>
+            <h2>目前題目</h2>
         </div>
         <div class="record-list">
             {% for question in survey.questions.all %}
-                <div class="record-row record-row-block">
+                <div class="record-row record-row-stack">
                     <div>
-                        <strong>{{ question.title }}</strong>
+                        <strong>{{ question.order }}. {{ question.title }}</strong>
                         <p>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</p>
                         {% if question.help_text %}
                             <p>{{ question.help_text }}</p>
                         {% endif %}
                         {% if question.options %}
-                            <p>選項：{{ question.options|join:"、" }}</p>
+                            <div class="option-pills">
+                                {% for option in question.options %}
+                                    <span class="pill">{{ option }}</span>
+                                {% endfor %}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="record-meta">
@@ -60,7 +64,7 @@
                             {% if question.is_required %}必填{% else %}選填{% endif %}
                         </span>
                         {% if question.enable_keyword_tracking %}
-                            <span class="pill">關鍵字追蹤</span>
+                            <span class="pill">文字分析</span>
                         {% endif %}
                         <form method="post">
                             {% csrf_token %}
@@ -73,8 +77,8 @@
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>尚未建立題目</h3>
-                        <p>可先在右側新增第一個題目，逐步完成問卷結構。</p>
+                        <h3>尚未加入題目</h3>
+                        <p>先建立第一題，之後再逐步補齊量表、選項題與文字題。</p>
                     </div>
                 </div>
             {% endfor %}
@@ -97,7 +101,7 @@
                     {{ field.errors }}
                 </div>
             {% endfor %}
-            <button type="submit" class="button button-primary">新增題目</button>
+            <button type="submit" class="button button-primary">加入題目</button>
         </form>
     </article>
 </section>

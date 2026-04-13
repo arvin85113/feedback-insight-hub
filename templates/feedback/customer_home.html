@@ -6,53 +6,131 @@
 <section class="portal-header">
     <div>
         <p class="section-kicker">Customer Portal</p>
-        <h1>我的填答與通知</h1>
-        <p>查看您已提交的問卷、接收過的改善通知，並管理是否接受未來更新。</p>
+        <h1>你的回饋紀錄與後續通知，都集中在這裡</h1>
+        <p>
+            你可以查看曾經填寫過的問卷、最近收到的改善通知，以及目前是否同意接收後續更新。
+            這裡是顧客端的正式入口，不只是一次性的填答頁。
+        </p>
     </div>
     <div class="portal-actions">
-        <a class="button button-ghost" href="{% url 'accounts:preferences' %}">通知設定</a>
-        <a class="button button-primary" href="{% url 'feedback:customer-notifications' %}">查看所有通知</a>
+        <a class="button button-ghost" href="{% url 'accounts:preferences' %}">調整通知偏好</a>
+        <a class="button button-primary" href="{% url 'feedback:customer-notifications' %}">查看通知紀錄</a>
     </div>
 </section>
 
 <section class="portal-grid">
     <article class="surface-card stat-surface">
-        <span>已提交問卷</span>
+        <span>已提交回覆</span>
         <strong>{{ submission_count }}</strong>
     </article>
     <article class="surface-card stat-surface">
-        <span>同意追蹤的填答</span>
-        <strong>{{ active_follow_up_count }}</strong>
+        <span>曾互動問卷</span>
+        <strong>{{ subscribed_survey_count }}</strong>
     </article>
     <article class="surface-card stat-surface">
-        <span>帳號通知狀態</span>
-        <strong>{% if user.notification_opt_in %}開啟{% else %}關閉{% endif %}</strong>
+        <span>通知狀態</span>
+        <strong>{% if user.notification_opt_in %}已開啟{% else %}已暫停{% endif %}</strong>
     </article>
 </section>
 
 <section class="portal-grid portal-grid-wide">
     <article class="surface-card">
         <div class="card-topline">
-            <h2>我填過的問卷</h2>
+            <h2>帳號摘要</h2>
+            <span class="pill {% if user.notification_opt_in %}pill-active{% endif %}">
+                {% if user.notification_opt_in %}接受改善通知{% else %}暫停改善通知{% endif %}
+            </span>
+        </div>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <span class="info-label">姓名</span>
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+            </div>
+            <div class="summary-card">
+                <span class="info-label">Email</span>
+                <strong>{{ user.email|default:"尚未填寫" }}</strong>
+            </div>
+            <div class="summary-card">
+                <span class="info-label">所屬單位</span>
+                <strong>{{ user.organization|default:"未指定" }}</strong>
+            </div>
+            <div class="summary-card">
+                <span class="info-label">最近一次填答</span>
+                <strong>
+                    {% if latest_submission %}
+                        {{ latest_submission.submitted_at|date:"Y/m/d" }}
+                    {% else %}
+                        尚無紀錄
+                    {% endif %}
+                </strong>
+            </div>
+        </div>
+    </article>
+
+    <article class="surface-card muted-card">
+        <div class="card-topline">
+            <h2>最新狀態</h2>
+        </div>
+        <div class="detail-list">
+            <div>
+                <span class="info-label">最近填寫的問卷</span>
+                <strong>
+                    {% if latest_submission %}
+                        {{ latest_submission.survey.title }}
+                    {% else %}
+                        尚未填寫任何問卷
+                    {% endif %}
+                </strong>
+            </div>
+            <div>
+                <span class="info-label">最近收到的通知</span>
+                <strong>
+                    {% if latest_notice %}
+                        {{ latest_notice.improvement.title }}
+                    {% else %}
+                        目前沒有通知
+                    {% endif %}
+                </strong>
+            </div>
+            <p class="panel-note">
+                {% if latest_notice %}
+                    {{ latest_notice.improvement.summary|truncatechars:110 }}
+                {% else %}
+                    當管理端針對你填答過的問卷發布改善更新時，系統會在這裡保留紀錄。
+                {% endif %}
+            </p>
+        </div>
+    </article>
+</section>
+
+<section class="portal-grid portal-grid-wide">
+    <article class="surface-card">
+        <div class="card-topline">
+            <h2>填答紀錄</h2>
+            <span class="muted-text">最近 8 筆</span>
         </div>
         <div class="record-list">
-            {% for submission in submissions %}
-                <div class="record-row">
+            {% for row in submission_rows %}
+                <div class="record-row record-row-stack">
                     <div>
-                        <strong>{{ submission.survey.title }}</strong>
-                        <p>{{ submission.submitted_at|date:"Y/m/d H:i" }} 送出</p>
+                        <strong>{{ row.submission.survey.title }}</strong>
+                        <p>{{ row.submission.submitted_at|date:"Y/m/d H:i" }} 提交</p>
+                        <p>{{ row.answer_count }} 題已作答</p>
                     </div>
                     <div class="record-meta">
-                        <span class="pill {% if submission.consent_follow_up %}pill-active{% endif %}">
-                            {% if submission.consent_follow_up %}接收更新{% else %}未接收更新{% endif %}
+                        <span class="pill {% if row.submission.consent_follow_up %}pill-active{% endif %}">
+                            {% if row.submission.consent_follow_up %}同意接收後續通知{% else %}未開啟後續通知{% endif %}
                         </span>
+                        {% if row.latest_notice %}
+                            <p class="muted-text">最近通知 {{ row.latest_notice.sent_at|date:"Y/m/d" }}</p>
+                        {% endif %}
                     </div>
                 </div>
             {% empty %}
                 <div class="empty-card">
                     <div>
                         <h3>目前還沒有填答紀錄</h3>
-                        <p>當您提交問卷後，紀錄會出現在這裡。</p>
+                        <p>當你完成第一份問卷後，這裡會開始累積你的回覆記錄與後續改善通知。</p>
                     </div>
                 </div>
             {% endfor %}
@@ -61,7 +139,8 @@
 
     <article class="surface-card">
         <div class="card-topline">
-            <h2>最近通知</h2>
+            <h2>通知預覽</h2>
+            <a class="text-link" href="{% url 'feedback:customer-notifications' %}">看全部</a>
         </div>
         <div class="record-list">
             {% for notice in notices %}
@@ -77,8 +156,8 @@
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>目前沒有收到通知</h3>
-                        <p>若管理端對您填過的問卷有改善更新，會顯示在這裡。</p>
+                        <h3>尚未收到通知</h3>
+                        <p>若你曾同意接收改善更新，管理端發布後續通知時，這裡會出現最新紀錄。</p>
                     </div>
                 </div>
             {% endfor %}

@@ -1,30 +1,46 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}建立新問卷 | FeedBack IQ{% endblock %}
+{% block title %}建立問卷 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
 <section class="manager-header">
     <div>
         <p class="section-kicker">Survey Setup</p>
-        <h1>建立新問卷</h1>
-        <p>先建立問卷基本資訊，再進入編輯器配置題目、開放方式與回饋後的通知流程。</p>
+        <h1>建立新的問卷專案</h1>
+        <p>先定義問卷定位、入口模式與後續改善追蹤設定，建立後即可進入題目編排。</p>
     </div>
 </section>
 
-<section class="manager-panel">
-    <form method="post" class="form-stack">
-        {% csrf_token %}
-        {% for field in form %}
-            <div class="field-block">
-                {{ field.label_tag }}
-                {{ field }}
-                {% if field.help_text %}
-                    <p class="muted-text">{{ field.help_text }}</p>
-                {% endif %}
-                {{ field.errors }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="button button-primary">建立問卷並進入編輯器</button>
-    </form>
+<section class="manager-dual-grid">
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>建立表單</h2>
+        </div>
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field-block">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="muted-text">{{ field.help_text }}</p>
+                    {% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button button-primary">建立問卷並前往題目編排</button>
+        </form>
+    </article>
+
+    <article class="manager-panel muted-card">
+        <div class="panel-head">
+            <h2>建議設定</h2>
+        </div>
+        <ul class="feature-list compact-list">
+            <li>正式對外問卷建議設定清楚的網址識別碼，方便長期使用。</li>
+            <li>若希望顧客持續收到改善通知，請保留改善追蹤功能。</li>
+            <li>若問卷要直接公開使用，可先啟用免登入或混合模式。</li>
+        </ul>
+    </article>
 </section>
 {% endblock %}

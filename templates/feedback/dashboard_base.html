@@ -9,7 +9,7 @@
             <div class="manager-brand-icon">F</div>
             <div>
                 <strong>FeedBack IQ</strong>
-                <small>Operations Console</small>
+                <small>Manager Workspace</small>
             </div>
         </div>
         <nav class="manager-nav">
@@ -21,7 +21,7 @@
             {% endfor %}
         </nav>
         <div class="manager-sidebar-foot">
-            <p>以 Base44 風格資訊密度為方向，保留你現有的 Django 功能。</p>
+            <p>以同一套後台管理問卷、文字分析、改善追蹤與通知中心，維持正式 SaaS 產品該有的工作流節奏。</p>
         </div>
     </aside>
 
@@ -32,7 +32,7 @@
                 <strong>{{ user.get_full_name|default:user.username }}</strong>
             </div>
             <div class="manager-topbar-actions">
-                <a class="button button-ghost" href="{% url 'feedback:home' %}">查看官網</a>
+                <a class="button button-ghost" href="{% url 'feedback:home' %}">返回官網首頁</a>
                 <form method="post" action="{% url 'accounts:logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="button button-primary button-small">登出</button>

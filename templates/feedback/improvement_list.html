@@ -7,7 +7,7 @@
     <div>
         <p class="section-kicker">Improvements</p>
         <h1>改善追蹤</h1>
-        <p>集中檢視所有已建立的改善更新，掌握每一項措施目前是否已對外通知與對應的問卷來源。</p>
+        <p>集中管理所有改善項目，快速查看其對應問卷、通知狀態與最近更新節點。</p>
     </div>
     {% if survey_list %}
         <a class="button button-primary" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">新增改善通知</a>
@@ -17,7 +17,7 @@
 <section class="manager-panel">
     <div class="record-list">
         {% for item in improvements %}
-            <div class="record-row record-row-block">
+            <div class="record-row record-row-stack">
                 <div>
                     <strong>{{ item.title }}</strong>
                     <p>{{ item.survey.title }}</p>
@@ -29,7 +29,7 @@
                     </span>
                     <p class="muted-text">建立於 {{ item.created_at|date:"Y/m/d" }}</p>
                     {% if item.emailed_at %}
-                        <p class="muted-text">寄送於 {{ item.emailed_at|date:"Y/m/d H:i" }}</p>
+                        <p class="muted-text">通知時間 {{ item.emailed_at|date:"Y/m/d H:i" }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -37,7 +37,7 @@
             <div class="empty-card">
                 <div>
                     <h3>目前沒有改善項目</h3>
-                    <p>可先從任一問卷建立改善更新，之後就能在這裡統一追蹤。</p>
+                    <p>可從任一問卷建立改善更新，後續通知顧客並留下歷程紀錄。</p>
                 </div>
             </div>
         {% endfor %}

@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}註冊 | FeedBack IQ{% endblock %}
+{% block title %}建立帳號 | FeedBack IQ{% endblock %}
 
 {% block content %}
-<section class="auth-layout">
+<section class="auth-layout auth-layout-wide">
     <article class="auth-copy">
         <p class="section-kicker">Customer Onboarding</p>
-        <h1>建立顧客帳號</h1>
+        <h1>建立顧客帳號並保留你的回饋歷程</h1>
         <p>
-            建立帳號後，您可以追蹤自己填寫過的問卷、查看已收到的改善通知，
-            並隨時調整是否接收後續更新。
+            註冊後可集中查看你填過的問卷、接收改善進度通知，並自行控制是否接受後續更新。
+            這讓回饋不只停在填表，而是能持續追蹤後續處理結果。
         </p>
+        <ul class="feature-list">
+            <li>保存填答紀錄與最新狀態。</li>
+            <li>管理通知偏好，不必重複填寫聯絡資料。</li>
+            <li>在顧客中心查看每次改善更新。</li>
+        </ul>
     </article>
     <article class="auth-card">
-        <h2>開始使用</h2>
+        <div class="panel-head">
+            <h2>建立帳號</h2>
+            <span class="pill">Customer Portal</span>
+        </div>
         <form method="post" class="form-stack">
             {% csrf_token %}
             {% for field in form %}
@@ -26,8 +34,8 @@
             <button type="submit" class="button button-primary button-wide">建立帳號</button>
         </form>
         <p class="auth-link-row">
-            已有帳號？
-            <a href="{% url 'accounts:login' %}">直接登入</a>
+            已經有帳號？
+            <a href="{% url 'accounts:login' %}">返回登入</a>
         </p>
     </article>
 </section>

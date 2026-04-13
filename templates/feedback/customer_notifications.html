@@ -6,32 +6,56 @@
 <section class="portal-header">
     <div>
         <p class="section-kicker">Notification History</p>
-        <h1>改善通知紀錄</h1>
-        <p>以下是您已收到的改善更新通知，系統會依您目前的通知偏好決定後續是否寄送。</p>
+        <h1>改善通知與追蹤更新紀錄</h1>
+        <p>
+            這裡保留你收到的改善更新通知。你可以回看每一筆通知對應哪一份問卷、
+            改善主題是什麼，以及系統是否仍維持通知開啟狀態。
+        </p>
     </div>
     <div class="portal-actions">
         <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">返回顧客中心</a>
-        <a class="button button-primary" href="{% url 'accounts:preferences' %}">
-            {% if notification_opt_in %}通知已開啟{% else %}前往開啟通知{% endif %}
-        </a>
+        <a class="button button-primary" href="{% url 'accounts:preferences' %}">管理通知偏好</a>
     </div>
+</section>
+
+<section class="portal-grid">
+    <article class="surface-card stat-surface">
+        <span>通知總數</span>
+        <strong>{{ notice_count }}</strong>
+    </article>
+    <article class="surface-card stat-surface">
+        <span>目前通知狀態</span>
+        <strong>{% if notification_opt_in %}已開啟{% else %}已暫停{% endif %}</strong>
+    </article>
+    <article class="surface-card stat-surface">
+        <span>最近通知日期</span>
+        <strong>{% if latest_notice %}{{ latest_notice.sent_at|date:"Y/m/d" }}{% else %}尚無{% endif %}</strong>
+    </article>
 </section>
 
 <section class="surface-card">
     <div class="record-list">
         {% for notice in notices %}
-            <div class="record-row record-row-block">
+            <div class="record-row record-row-stack">
                 <div>
                     <strong>{{ notice.improvement.title }}</strong>
                     <p>{{ notice.submission.survey.title }} | {{ notice.sent_at|date:"Y/m/d H:i" }}</p>
                     <p>{{ notice.improvement.summary }}</p>
+                    {% if notice.personalized_note %}
+                        <p class="panel-note">{{ notice.personalized_note }}</p>
+                    {% endif %}
+                </div>
+                <div class="record-meta">
+                    <span class="pill {% if notification_opt_in %}pill-active{% endif %}">
+                        {% if notification_opt_in %}通知開啟中{% else %}通知已暫停{% endif %}
+                    </span>
                 </div>
             </div>
         {% empty %}
             <div class="empty-card">
                 <div>
-                    <h3>尚無通知紀錄</h3>
-                    <p>未來若有改善進度，會集中顯示在這裡。</p>
+                    <h3>目前沒有通知紀錄</h3>
+                    <p>當管理端對你填寫過的問卷發布改善項目並發送通知時，這裡會同步保留完整記錄。</p>
                 </div>
             </div>
         {% endfor %}

@@ -3,22 +3,30 @@
 {% block title %}登入 | FeedBack IQ{% endblock %}
 
 {% block content %}
-<section class="auth-layout">
+<section class="auth-layout auth-layout-wide">
     <article class="auth-copy">
         <p class="section-kicker">Secure Access</p>
-        <h1>登入 FeedBack IQ</h1>
+        <h1>登入 FeedBack IQ 工作空間</h1>
         <p>
-            管理者可進入營運後台查看問卷、分析與改善追蹤；
-            顧客登入後可查看自己填寫過的問卷與是否接收更新通知。
+            以同一組帳號切換顧客中心與管理後台。顧客可查看填答紀錄與改善通知，管理者可進入
+            問卷、統計、文字分析與改善追蹤工作台。
         </p>
-        <ul class="feature-list">
-            <li>依身分自動分流到對應入口</li>
-            <li>保留既有問卷與改善通知功能</li>
-            <li>讓前台與後台使用同一套品牌語言</li>
-        </ul>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <span class="info-label">顧客端</span>
+                <strong>我的填答、通知與偏好設定</strong>
+            </div>
+            <div class="summary-card">
+                <span class="info-label">管理端</span>
+                <strong>問卷營運、統計分析與改善發布</strong>
+            </div>
+        </div>
     </article>
     <article class="auth-card">
-        <h2>帳號登入</h2>
+        <div class="panel-head">
+            <h2>登入帳號</h2>
+            <span class="pill">SaaS Workspace</span>
+        </div>
         <form method="post" class="form-stack">
             {% csrf_token %}
             {% for field in form %}

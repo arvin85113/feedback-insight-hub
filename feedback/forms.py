@@ -48,10 +48,10 @@ class ImprovementUpdateForm(forms.ModelForm):
         model = ImprovementUpdate
         fields = ("title", "summary", "related_category", "send_global_notice")
         labels = {
-            "title": "改善主題",
+            "title": "改善標題",
             "summary": "改善內容摘要",
-            "related_category": "關聯分類",
-            "send_global_notice": "是否發送通知",
+            "related_category": "對應分類",
+            "send_global_notice": "對所有已訂閱顧客發送",
         }
 
 
@@ -69,12 +69,12 @@ class SurveyCreateForm(forms.ModelForm):
         )
         labels = {
             "title": "問卷標題",
-            "slug": "網址代稱",
+            "slug": "網址識別碼",
             "description": "問卷說明",
-            "access_mode": "填答模式",
+            "access_mode": "開放模式",
             "thank_you_email_enabled": "送出後寄送感謝信",
             "improvement_tracking_enabled": "啟用改善追蹤",
-            "is_active": "啟用問卷",
+            "is_active": "立即啟用問卷",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
@@ -95,21 +95,21 @@ class QuestionCreateForm(forms.ModelForm):
             "order",
         )
         labels = {
-            "title": "問題標題",
-            "help_text": "補充說明",
+            "title": "題目標題",
+            "help_text": "輔助說明",
             "kind": "題型",
             "data_type": "資料型態",
             "options_text": "選項內容",
             "is_required": "必填",
-            "enable_keyword_tracking": "啟用文字關鍵字追蹤",
+            "enable_keyword_tracking": "啟用文字關鍵字分析",
             "order": "排序",
         }
         widgets = {
             "options_text": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "請一行填一個選項\n例如：\n非常滿意\n滿意\n普通",
+                    "placeholder": "每一行輸入一個選項，例如：\n非常滿意\n滿意\n普通",
                 }
             ),
-            "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照您最近一次使用經驗作答"}),
+            "help_text": forms.TextInput(attrs={"placeholder": "可補充作答說明、填寫範圍或評分方式"}),
         }

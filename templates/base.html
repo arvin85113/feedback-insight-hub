@@ -25,7 +25,7 @@
                             <a href="{% url 'feedback:dashboard' %}">管理後台</a>
                         {% else %}
                             <a href="{% url 'feedback:customer-home' %}">顧客中心</a>
-                            <a href="{% url 'accounts:preferences' %}">通知設定</a>
+                            <a href="{% url 'accounts:preferences' %}">通知偏好</a>
                         {% endif %}
                         <form method="post" action="{% url 'accounts:logout' %}">
                             {% csrf_token %}
@@ -33,7 +33,7 @@
                         </form>
                     {% else %}
                         <a href="{% url 'accounts:login' %}">登入</a>
-                        <a class="button button-primary button-small" href="{% url 'accounts:signup' %}">開始使用</a>
+                        <a class="button button-primary button-small" href="{% url 'accounts:signup' %}">建立帳號</a>
                     {% endif %}
                 </nav>
             </div>

@@ -7,44 +7,44 @@
     <div>
         <p class="section-kicker">Text Analysis</p>
         <h1>文字分析</h1>
-        <p>彙整文字題回覆中的高頻關鍵字，協助管理端快速掌握顧客聲音與潛在的改善主題。</p>
+        <p>整理開放式題目的關鍵字與主題分類，協助團隊快速理解顧客回饋的重點方向。</p>
     </div>
-    <form method="get" class="form-stack" style="min-width: 320px;">
+    <form method="get" class="form-stack manager-filter-form">
         <div class="field-block">
             <label for="text-survey">選擇問卷</label>
             <select id="text-survey" name="survey">
-                <option value="">請選擇問卷</option>
+                <option value="">請選擇分析對象</option>
                 {% for survey in survey_list %}
                     <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="button button-primary">開始分析</button>
+        <button type="submit" class="button button-primary">執行分析</button>
     </form>
 </section>
 
 {% if selected_survey %}
-    <section class="portal-grid">
-        <article class="surface-card stat-surface">
-            <span>目前分析問卷</span>
+    <section class="kpi-strip">
+        <article class="kpi-chip">
+            <span>分析問卷</span>
             <strong>{{ selected_survey.title }}</strong>
         </article>
-        <article class="surface-card stat-surface">
+        <article class="kpi-chip">
             <span>文字題數量</span>
             <strong>{{ text_questions|length }}</strong>
         </article>
-        <article class="surface-card stat-surface">
-            <span>已整理關鍵字</span>
+        <article class="kpi-chip">
+            <span>關鍵字數量</span>
             <strong>{{ keywords|length }}</strong>
         </article>
     </section>
 
-    <section class="manager-content-grid">
+    <section class="manager-content-grid analytics-grid">
         <article class="manager-panel">
             <div class="panel-head">
-                <h2>關鍵字摘要</h2>
+                <h2>關鍵字主題</h2>
             </div>
-            <div class="card-grid">
+            <div class="card-grid insight-card-grid">
                 {% for keyword in keywords %}
                     <article class="surface-card">
                         <div class="card-topline">
@@ -52,13 +52,13 @@
                             <span class="muted-text">{{ keyword.count }} 次</span>
                         </div>
                         <h3>{{ keyword.keyword }}</h3>
-                        <p>可作為後續建立改善主題、公告通知與管理報告的索引依據。</p>
+                        <p>可作為後續改善優先順序、公告分類與顧客溝通主題的基礎參考。</p>
                     </article>
                 {% empty %}
                     <div class="empty-card">
                         <div>
-                            <h3>目前沒有分析結果</h3>
-                            <p>請先確認此問卷已有文字題回覆，之後即可在此檢視關鍵字彙整。</p>
+                            <h3>尚未有可用關鍵字</h3>
+                            <p>若文字題回覆量不足，這裡會暫時維持空白。</p>
                         </div>
                     </div>
                 {% endfor %}
@@ -67,11 +67,11 @@
 
         <article class="manager-panel">
             <div class="panel-head">
-                <h2>文字題範圍</h2>
+                <h2>文字題清單</h2>
             </div>
             <div class="record-list">
                 {% for question in text_questions %}
-                    <div class="record-row record-row-block">
+                    <div class="record-row record-row-stack">
                         <div>
                             <strong>{{ question.title }}</strong>
                             <p>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</p>
@@ -84,7 +84,7 @@
                     <div class="empty-card">
                         <div>
                             <h3>這份問卷沒有文字題</h3>
-                            <p>如果要進行回饋文字分析，建議在問卷中加入短答或長答題型。</p>
+                            <p>可在題目編排中加入開放式題目，再回到這裡分析內容。</p>
                         </div>
                     </div>
                 {% endfor %}
@@ -95,8 +95,8 @@
     <section class="manager-panel">
         <div class="empty-card">
             <div>
-                <h3>請先選擇問卷</h3>
-                <p>選取問卷後，系統會顯示文字題範圍與目前已整理的關鍵字結果。</p>
+                <h3>先選擇一份問卷</h3>
+                <p>指定問卷後，系統會整理其文字題與已偵測到的關鍵字。</p>
             </div>
         </div>
     </section>

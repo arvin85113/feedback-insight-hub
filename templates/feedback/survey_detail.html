@@ -7,13 +7,28 @@
     <div class="survey-shell-head">
         <p class="section-kicker">Feedback Form</p>
         <h1>{{ survey.title }}</h1>
-        <p>{{ survey.description|default:"請依您的實際體驗填寫以下問卷。" }}</p>
+        <p>{{ survey.description|default:"請依題目內容提供你的意見，我們會將回饋整理後作為後續改善依據。" }}</p>
+    </div>
+
+    <div class="kpi-strip">
+        <article class="kpi-chip">
+            <span>填答模式</span>
+            <strong>{{ survey.get_access_mode_display }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>題目數量</span>
+            <strong>{{ survey.questions.count }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>改善追蹤</span>
+            <strong>{% if survey.improvement_tracking_enabled %}已啟用{% else %}未啟用{% endif %}</strong>
+        </article>
     </div>
 
     <form method="post" class="survey-card-stack">
         {% csrf_token %}
         <article class="survey-card survey-card-accent">
-            <h2>基本資訊</h2>
+            <h2>基本資料與通知</h2>
             <div class="form-grid">
                 {% for field in quick_form %}
                     <div class="field-block">
@@ -32,7 +47,7 @@
                     {{ field.label_tag }}
                     {{ field }}
                     {% if field.help_text %}
-                        <small>{{ field.help_text }}</small>
+                        <small class="muted-text">{{ field.help_text }}</small>
                     {% endif %}
                     {{ field.errors }}
                 </div>

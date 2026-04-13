@@ -6,8 +6,8 @@
 <section class="manager-header">
     <div>
         <p class="section-kicker">Overview</p>
-        <h1>管理總覽</h1>
-        <p>集中查看問卷規模、近期回覆趨勢、改善進度與下一步操作。</p>
+        <h1>管理端總覽</h1>
+        <p>先看營運節奏，再決定下一步。這個首頁集中呈現問卷上線狀態、回覆量、近期改善與最近顧客互動。</p>
     </div>
 </section>
 
@@ -40,51 +40,108 @@
 
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>快捷動作</h2>
+            <h2>快捷操作</h2>
         </div>
         <div class="record-list">
             <a class="record-row" href="{% url 'feedback:survey-create' %}">
                 <div>
                     <strong>建立新問卷</strong>
-                    <p>新增正式表單並進入題目編輯流程</p>
+                    <p>新增正式問卷，開始規劃題型、題序與開放模式。</p>
                 </div>
             </a>
             <a class="record-row" href="{% url 'feedback:stats-overview' %}">
                 <div>
                     <strong>查看統計分析</strong>
-                    <p>檢視數值題與選擇題的分布與摘要</p>
+                    <p>快速切換到數值與分布統計頁，掌握整體樣貌。</p>
                 </div>
             </a>
             <a class="record-row" href="{% url 'feedback:text-analysis' %}">
                 <div>
-                    <strong>查看文字洞察</strong>
-                    <p>整理文字回饋、關鍵字與主題分類</p>
+                    <strong>整理文字回饋</strong>
+                    <p>把顧客開放式意見整理成分類與可追蹤主題。</p>
                 </div>
             </a>
         </div>
     </article>
 </section>
 
+<section class="manager-dual-grid">
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>表現最活躍的問卷</h2>
+        </div>
+        <div class="record-list">
+            {% for survey in top_surveys %}
+                <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+                    <div>
+                        <strong>{{ survey.title }}</strong>
+                        <p>{{ survey.get_access_mode_display }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="pill pill-active">{{ survey.submissions.count }} 份回覆</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>目前沒有問卷資料</h3>
+                        <p>建立第一份問卷後，這裡會開始依回覆量呈現最活躍的問卷。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>最新改善項目</h2>
+        </div>
+        <div class="record-list">
+            {% for item in latest_improvements %}
+                <div class="record-row">
+                    <div>
+                        <strong>{{ item.title }}</strong>
+                        <p>{{ item.survey.title }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="pill {% if item.emailed_at %}pill-active{% endif %}">
+                            {% if item.emailed_at %}已通知顧客{% else %}待通知{% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚未建立改善追蹤</h3>
+                        <p>當文字分析或統計結果整理出可執行事項後，可在改善追蹤頁建立後續項目。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
 <section class="manager-panel">
     <div class="panel-head">
-        <h2>近期問卷</h2>
+        <h2>最近顧客回覆</h2>
+        <span class="muted-text">最新 6 筆</span>
     </div>
     <div class="record-list">
-        {% for survey in recent_surveys %}
-            <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+        {% for response in recent_responses %}
+            <div class="record-row">
                 <div>
-                    <strong>{{ survey.title }}</strong>
-                    <p>{{ survey.description|default:"此問卷已建立，可持續編輯與追蹤回覆。" }}</p>
+                    <strong>{{ response.display_name }}</strong>
+                    <p>{{ response.survey.title }}</p>
                 </div>
                 <div class="record-meta">
-                    <span class="muted-text">{{ survey.submissions.count }} 份回覆</span>
+                    <p class="muted-text">{{ response.submitted_at|date:"Y/m/d H:i" }}</p>
                 </div>
-            </a>
+            </div>
         {% empty %}
             <div class="empty-card">
                 <div>
-                    <h3>還沒有問卷資料</h3>
-                    <p>先建立第一份問卷，後台指標就會開始累積。</p>
+                    <h3>尚未收到回覆</h3>
+                    <p>當問卷開始蒐集資料後，這裡會顯示最新顧客互動，方便你快速掌握現況。</p>
                 </div>
             </div>
         {% endfor %}

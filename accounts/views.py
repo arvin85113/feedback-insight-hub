@@ -28,7 +28,7 @@ class CustomerSignUpView(CreateView):
     success_url = reverse_lazy("accounts:login")
 
     def form_valid(self, form):
-        messages.success(self.request, "帳號建立完成，登入後即可查看已填問卷與通知偏好。")
+        messages.success(self.request, "註冊完成，現在可以登入查看你的問卷紀錄與通知設定。")
         return super().form_valid(form)
 
 
@@ -41,7 +41,7 @@ def customer_preferences_view(request):
         form = CustomerPreferenceForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, "個人資料與更新通知偏好已儲存。")
+            messages.success(request, "個人資料與通知偏好已更新。")
             return redirect("accounts:preferences")
     else:
         form = CustomerPreferenceForm(instance=request.user)
