@@ -14,6 +14,12 @@ services:
         value: false
       - key: FEEDBACK_SERVICE_URL
         value: "http://feedback-domain-service:10000"
+      - key: FEEDBACK_SERVICE_CONNECT_TIMEOUT
+        value: "0.35"
+      - key: FEEDBACK_SERVICE_READ_TIMEOUT
+        value: "0.8"
+      - key: FEEDBACK_SERVICE_FAILURE_COOLDOWN
+        value: "30"
 
   - type: pserv
     name: feedback-domain-service

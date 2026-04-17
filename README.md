@@ -58,6 +58,7 @@ python manage.py runserver
 ```
 
 若未設定 `FEEDBACK_SERVICE_URL`，Django 會退回本地 provider，方便單機開發；設定後則會優先呼叫 Flask 微服務。
+若 Flask 微服務暫時不可用，Django 會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
 
 ## 重要環境變數
 
@@ -67,6 +68,9 @@ DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 DEFAULT_FROM_EMAIL=noreply@example.com
 FEEDBACK_SERVICE_URL=http://127.0.0.1:5001
+FEEDBACK_SERVICE_CONNECT_TIMEOUT=0.35
+FEEDBACK_SERVICE_READ_TIMEOUT=0.8
+FEEDBACK_SERVICE_FAILURE_COOLDOWN=30
 ```
 
 ## Render Blueprint
