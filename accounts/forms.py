@@ -5,13 +5,22 @@ from .models import User
 
 
 class LoginForm(AuthenticationForm):
-    pass
+    username = forms.CharField(label="帳號")
+    password = forms.CharField(label="密碼", widget=forms.PasswordInput)
 
 
 class CustomerSignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ("username", "first_name", "last_name", "email", "organization", "notification_opt_in")
+        labels = {
+            "username": "登入帳號",
+            "first_name": "名字",
+            "last_name": "姓氏",
+            "email": "Email",
+            "organization": "所屬單位",
+            "notification_opt_in": "願意接收後續改善通知",
+        }
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -25,3 +34,10 @@ class CustomerPreferenceForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("first_name", "last_name", "email", "organization", "notification_opt_in")
+        labels = {
+            "first_name": "名字",
+            "last_name": "姓氏",
+            "email": "Email",
+            "organization": "所屬單位",
+            "notification_opt_in": "願意接收改善通知",
+        }

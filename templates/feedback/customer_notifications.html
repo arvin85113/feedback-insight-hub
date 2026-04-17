@@ -6,15 +6,15 @@
 <section class="portal-header">
     <div>
         <p class="section-kicker">Notification History</p>
-        <h1>改善通知與追蹤更新紀錄</h1>
+        <h1>追蹤我收到的改善更新與通知內容</h1>
         <p>
-            這裡保留你收到的改善更新通知。你可以回看每一筆通知對應哪一份問卷、
-            改善主題是什麼，以及系統是否仍維持通知開啟狀態。
+            所有與你填答問卷相關的改善通知都會集中在這裡，包含通知時間、對應問卷與改善摘要，
+            方便你回頭確認哪些建議已被採納、哪些服務已完成優化。
         </p>
     </div>
     <div class="portal-actions">
-        <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">返回顧客中心</a>
-        <a class="button button-primary" href="{% url 'accounts:preferences' %}">管理通知偏好</a>
+        <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">回顧客中心</a>
+        <a class="button button-primary" href="{% url 'accounts:preferences' %}">調整通知偏好</a>
     </div>
 </section>
 
@@ -24,8 +24,8 @@
         <strong>{{ notice_count }}</strong>
     </article>
     <article class="surface-card stat-surface">
-        <span>目前通知狀態</span>
-        <strong>{% if notification_opt_in %}已開啟{% else %}已暫停{% endif %}</strong>
+        <span>目前通知設定</span>
+        <strong>{% if notification_opt_in %}已開啟{% else %}已關閉{% endif %}</strong>
     </article>
     <article class="surface-card stat-surface">
         <span>最近通知日期</span>
@@ -47,15 +47,15 @@
                 </div>
                 <div class="record-meta">
                     <span class="pill {% if notification_opt_in %}pill-active{% endif %}">
-                        {% if notification_opt_in %}通知開啟中{% else %}通知已暫停{% endif %}
+                        {% if notification_opt_in %}通知開啟中{% else %}通知已關閉{% endif %}
                     </span>
                 </div>
             </div>
         {% empty %}
             <div class="empty-card">
                 <div>
-                    <h3>目前沒有通知紀錄</h3>
-                    <p>當管理端對你填寫過的問卷發布改善項目並發送通知時，這裡會同步保留完整記錄。</p>
+                    <h3>目前還沒有通知紀錄</h3>
+                    <p>當你填答過的問卷有新的改善進度時，系統會把更新內容同步整理到這個頁面。</p>
                 </div>
             </div>
         {% endfor %}

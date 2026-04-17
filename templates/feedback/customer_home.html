@@ -6,39 +6,39 @@
 <section class="portal-header">
     <div>
         <p class="section-kicker">Customer Portal</p>
-        <h1>你的回饋紀錄與後續通知，都集中在這裡</h1>
+        <h1>查看我填過的問卷、更新通知與目前回饋狀態</h1>
         <p>
-            你可以查看曾經填寫過的問卷、最近收到的改善通知，以及目前是否同意接收後續更新。
-            這裡是顧客端的正式入口，不只是一次性的填答頁。
+            顧客端提供填答紀錄、通知歷程與個人偏好設定。你可以確認自己曾提交哪些問卷，
+            也可以決定是否接收表單改善後的後續通知，形成完整的回饋閉環。
         </p>
     </div>
     <div class="portal-actions">
-        <a class="button button-ghost" href="{% url 'accounts:preferences' %}">調整通知偏好</a>
+        <a class="button button-ghost" href="{% url 'accounts:preferences' %}">通知偏好</a>
         <a class="button button-primary" href="{% url 'feedback:customer-notifications' %}">查看通知紀錄</a>
     </div>
 </section>
 
 <section class="portal-grid">
     <article class="surface-card stat-surface">
-        <span>已提交回覆</span>
+        <span>已填答問卷</span>
         <strong>{{ submission_count }}</strong>
     </article>
     <article class="surface-card stat-surface">
-        <span>曾互動問卷</span>
+        <span>訂閱更新的問卷</span>
         <strong>{{ subscribed_survey_count }}</strong>
     </article>
     <article class="surface-card stat-surface">
         <span>通知狀態</span>
-        <strong>{% if user.notification_opt_in %}已開啟{% else %}已暫停{% endif %}</strong>
+        <strong>{% if user.notification_opt_in %}已開啟{% else %}已關閉{% endif %}</strong>
     </article>
 </section>
 
 <section class="portal-grid portal-grid-wide">
     <article class="surface-card">
         <div class="card-topline">
-            <h2>帳號摘要</h2>
+            <h2>我的帳戶摘要</h2>
             <span class="pill {% if user.notification_opt_in %}pill-active{% endif %}">
-                {% if user.notification_opt_in %}接受改善通知{% else %}暫停改善通知{% endif %}
+                {% if user.notification_opt_in %}願意接收更新{% else %}不接收更新{% endif %}
             </span>
         </div>
         <div class="summary-grid">
@@ -48,7 +48,7 @@
             </div>
             <div class="summary-card">
                 <span class="info-label">Email</span>
-                <strong>{{ user.email|default:"尚未填寫" }}</strong>
+                <strong>{{ user.email|default:"尚未設定" }}</strong>
             </div>
             <div class="summary-card">
                 <span class="info-label">所屬單位</span>
@@ -60,7 +60,7 @@
                     {% if latest_submission %}
                         {{ latest_submission.submitted_at|date:"Y/m/d" }}
                     {% else %}
-                        尚無紀錄
+                        尚未填答
                     {% endif %}
                 </strong>
             </div>
@@ -78,17 +78,17 @@
                     {% if latest_submission %}
                         {{ latest_submission.survey.title }}
                     {% else %}
-                        尚未填寫任何問卷
+                        尚無紀錄
                     {% endif %}
                 </strong>
             </div>
             <div>
-                <span class="info-label">最近收到的通知</span>
+                <span class="info-label">最近收到的改善通知</span>
                 <strong>
                     {% if latest_notice %}
                         {{ latest_notice.improvement.title }}
                     {% else %}
-                        目前沒有通知
+                        尚未收到通知
                     {% endif %}
                 </strong>
             </div>
@@ -96,7 +96,7 @@
                 {% if latest_notice %}
                     {{ latest_notice.improvement.summary|truncatechars:110 }}
                 {% else %}
-                    當管理端針對你填答過的問卷發布改善更新時，系統會在這裡保留紀錄。
+                    當管理端針對你填過的問卷完成改善後，這裡會優先顯示最近一次更新摘要。
                 {% endif %}
             </p>
         </div>
@@ -119,7 +119,7 @@
                     </div>
                     <div class="record-meta">
                         <span class="pill {% if row.submission.consent_follow_up %}pill-active{% endif %}">
-                            {% if row.submission.consent_follow_up %}同意接收後續通知{% else %}未開啟後續通知{% endif %}
+                            {% if row.submission.consent_follow_up %}願意接收追蹤{% else %}不接收追蹤{% endif %}
                         </span>
                         {% if row.latest_notice %}
                             <p class="muted-text">最近通知 {{ row.latest_notice.sent_at|date:"Y/m/d" }}</p>
@@ -129,8 +129,8 @@
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>目前還沒有填答紀錄</h3>
-                        <p>當你完成第一份問卷後，這裡會開始累積你的回覆記錄與後續改善通知。</p>
+                        <h3>目前沒有填答紀錄</h3>
+                        <p>你完成問卷後，這裡會整理你的作答時間、題數與後續通知狀態。</p>
                     </div>
                 </div>
             {% endfor %}
@@ -139,8 +139,8 @@
 
     <article class="surface-card">
         <div class="card-topline">
-            <h2>通知預覽</h2>
-            <a class="text-link" href="{% url 'feedback:customer-notifications' %}">看全部</a>
+            <h2>通知摘要</h2>
+            <a class="text-link" href="{% url 'feedback:customer-notifications' %}">檢視全部</a>
         </div>
         <div class="record-list">
             {% for notice in notices %}
@@ -156,8 +156,8 @@
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>尚未收到通知</h3>
-                        <p>若你曾同意接收改善更新，管理端發布後續通知時，這裡會出現最新紀錄。</p>
+                        <h3>尚無通知紀錄</h3>
+                        <p>當改善任務完成並對外發布後，系統會依你的偏好將更新整理在這裡。</p>
                     </div>
                 </div>
             {% endfor %}

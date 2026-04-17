@@ -12,8 +12,8 @@ from django.utils import timezone
 class Survey(models.Model):
     class AccessMode(models.TextChoices):
         LOGIN = "login", "登入後填答"
-        QUICK = "quick", "免登入填答"
-        HYBRID = "hybrid", "混合模式"
+        QUICK = "quick", "快速填答"
+        HYBRID = "hybrid", "雙入口模式"
 
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
@@ -37,8 +37,8 @@ class Survey(models.Model):
 
 class Question(models.Model):
     class Kind(models.TextChoices):
-        SHORT_TEXT = "short_text", "短答"
-        LONG_TEXT = "long_text", "長答"
+        SHORT_TEXT = "short_text", "短文字"
+        LONG_TEXT = "long_text", "長文字"
         SINGLE_CHOICE = "single_choice", "單選"
         MULTIPLE_CHOICE = "multiple_choice", "多選"
         INTEGER = "integer", "整數"
@@ -57,7 +57,7 @@ class Question(models.Model):
     help_text = models.CharField(max_length=255, blank=True)
     kind = models.CharField(max_length=20, choices=Kind.choices)
     data_type = models.CharField(max_length=20, choices=DataType.choices)
-    options_text = models.TextField(blank=True, help_text="每一行輸入一個選項。")
+    options_text = models.TextField(blank=True, help_text="每行一個選項，供單選或多選題使用。")
     is_required = models.BooleanField(default=True)
     enable_keyword_tracking = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
@@ -156,8 +156,8 @@ class ImprovementDispatch(models.Model):
 
 
 def tokenize_feedback(text):
-    tokens = re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", text.lower())
-    stop_words = {"我們", "你們", "可以", "希望", "覺得", "就是", "真的", "回饋", "feedback"}
+    tokens = re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", (text or "").lower())
+    stop_words = {"我們", "你們", "這個", "那個", "非常", "feedback", "問卷", "改善"}
     return [token for token in tokens if token not in stop_words]
 
 
@@ -213,9 +213,9 @@ def chart_summary(survey):
 
 def recommend_analysis(question):
     if question.data_type == Question.DataType.CONTINUOUS:
-        return "建議使用平均數、標準差、趨勢比較，必要時可延伸至 t 檢定或 ANOVA。"
+        return "適合進一步做平均數比較、趨勢檢視，或延伸到 t 檢定與 ANOVA。"
     if question.data_type in {Question.DataType.NOMINAL, Question.DataType.ORDINAL}:
-        return "建議使用次數分布、比例比較、交叉分析，並搭配分群觀察不同客群差異。"
+        return "適合以比例分布、交叉分析與卡方檢定檢查不同群體間差異。"
     if question.data_type == Question.DataType.TEXT:
-        return "建議先做文字清理與關鍵字分類，再彙整主題作為後續改善與公告依據。"
-    return "可先從描述性統計與基本分布開始，再視資料型態決定是否進一步分析。"
+        return "適合做關鍵字、情緒傾向與主題聚類，提取具體改善線索。"
+    return "建議先確認資料尺度，再選擇描述統計或推論統計方法。"

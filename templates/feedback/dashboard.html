@@ -1,13 +1,19 @@
 {% extends "feedback/dashboard_base.html" %}
 
-{% block title %}管理總覽 | FeedBack IQ{% endblock %}
+{% block title %}營運總覽 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
 <section class="manager-header">
     <div>
-        <p class="section-kicker">Overview</p>
-        <h1>管理端總覽</h1>
-        <p>先看營運節奏，再決定下一步。這個首頁集中呈現問卷上線狀態、回覆量、近期改善與最近顧客互動。</p>
+        <p class="section-kicker">Manager Workspace</p>
+        <h1>掌握回饋流量、改善進度與下一步行動</h1>
+        <p>
+            這個首頁聚合近期回饋、改善任務與通知狀態，讓管理端能快速判斷目前最需要處理的問卷、
+            哪些改善案應該優先推進，以及是否有顧客需要更新通知。
+        </p>
+    </div>
+    <div class="manager-header-inline">
+        <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
     </div>
 </section>
 
@@ -24,7 +30,7 @@
 <section class="manager-content-grid">
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>近七日回覆趨勢</h2>
+            <h2>近七日回饋量趨勢</h2>
         </div>
         <div class="trend-chart">
             {% for point in daily_counts %}
@@ -40,27 +46,27 @@
 
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>快捷操作</h2>
+            <h2>待辦清單</h2>
         </div>
         <div class="record-list">
-            <a class="record-row" href="{% url 'feedback:survey-create' %}">
-                <div>
-                    <strong>建立新問卷</strong>
-                    <p>新增正式問卷，開始規劃題型、題序與開放模式。</p>
+            {% for item in action_items %}
+                <a class="record-row" href="{{ item.url }}">
+                    <div>
+                        <strong>{{ item.title }}</strong>
+                        <p>{{ item.meta }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="text-link">{{ item.url_label }}</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>目前沒有待辦項目</h3>
+                        <p>所有核心流程都已處理完成。你可以建立新問卷，或回到分析頁查看更多洞察。</p>
+                    </div>
                 </div>
-            </a>
-            <a class="record-row" href="{% url 'feedback:stats-overview' %}">
-                <div>
-                    <strong>查看統計分析</strong>
-                    <p>快速切換到數值與分布統計頁，掌握整體樣貌。</p>
-                </div>
-            </a>
-            <a class="record-row" href="{% url 'feedback:text-analysis' %}">
-                <div>
-                    <strong>整理文字回饋</strong>
-                    <p>把顧客開放式意見整理成分類與可追蹤主題。</p>
-                </div>
-            </a>
+            {% endfor %}
         </div>
     </article>
 </section>
@@ -68,24 +74,19 @@
 <section class="manager-dual-grid">
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>表現最活躍的問卷</h2>
+            <h2>營運洞察</h2>
         </div>
         <div class="record-list">
-            {% for survey in top_surveys %}
-                <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
-                    <div>
-                        <strong>{{ survey.title }}</strong>
-                        <p>{{ survey.get_access_mode_display }}</p>
-                    </div>
-                    <div class="record-meta">
-                        <span class="pill pill-active">{{ survey.submissions.count }} 份回覆</span>
-                    </div>
-                </a>
+            {% for insight in insights %}
+                <div class="insight-block">
+                    <strong>{{ insight.title }}</strong>
+                    <p>{{ insight.body }}</p>
+                </div>
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>目前沒有問卷資料</h3>
-                        <p>建立第一份問卷後，這裡會開始依回覆量呈現最活躍的問卷。</p>
+                        <h3>暫時沒有可用洞察</h3>
+                        <p>系統會在回饋資料累積後，自動整理出重要趨勢與優先處理建議。</p>
                     </div>
                 </div>
             {% endfor %}
@@ -94,7 +95,35 @@
 
     <article class="manager-panel">
         <div class="panel-head">
-            <h2>最新改善項目</h2>
+            <h2>重點問卷</h2>
+        </div>
+        <div class="record-list">
+            {% for survey in top_surveys %}
+                <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
+                    <div>
+                        <strong>{{ survey.title }}</strong>
+                        <p>{{ survey.access_mode_display }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <span class="pill pill-active">{{ survey.submissions.count }} 份回覆</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚未建立問卷</h3>
+                        <p>先建立第一份問卷，系統才會開始累積回饋、通知與改善追蹤資料。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="manager-dual-grid">
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>近期改善任務</h2>
         </div>
         <div class="record-list">
             {% for item in latest_improvements %}
@@ -105,46 +134,45 @@
                     </div>
                     <div class="record-meta">
                         <span class="pill {% if item.emailed_at %}pill-active{% endif %}">
-                            {% if item.emailed_at %}已通知顧客{% else %}待通知{% endif %}
+                            {% if item.emailed_at %}已通知{% else %}未通知{% endif %}
                         </span>
                     </div>
                 </div>
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>尚未建立改善追蹤</h3>
-                        <p>當文字分析或統計結果整理出可執行事項後，可在改善追蹤頁建立後續項目。</p>
+                        <h3>尚無改善追蹤</h3>
+                        <p>當你從顧客回饋整理出改善方向後，這裡會顯示最新的任務與通知狀態。</p>
                     </div>
                 </div>
             {% endfor %}
         </div>
     </article>
-</section>
 
-<section class="manager-panel">
-    <div class="panel-head">
-        <h2>最近顧客回覆</h2>
-        <span class="muted-text">最新 6 筆</span>
-    </div>
-    <div class="record-list">
-        {% for response in recent_responses %}
-            <div class="record-row">
-                <div>
-                    <strong>{{ response.display_name }}</strong>
-                    <p>{{ response.survey.title }}</p>
+    <article class="manager-panel">
+        <div class="panel-head">
+            <h2>最新回覆</h2>
+        </div>
+        <div class="record-list">
+            {% for response in recent_responses %}
+                <div class="record-row">
+                    <div>
+                        <strong>{{ response.display_name }}</strong>
+                        <p>{{ response.survey.title }}</p>
+                    </div>
+                    <div class="record-meta">
+                        <p class="muted-text">{{ response.submitted_at|date:"Y/m/d H:i" }}</p>
+                    </div>
                 </div>
-                <div class="record-meta">
-                    <p class="muted-text">{{ response.submitted_at|date:"Y/m/d H:i" }}</p>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>還沒有最新回覆</h3>
+                        <p>問卷開始收集後，最近的顧客回應會優先出現在這裡。</p>
+                    </div>
                 </div>
-            </div>
-        {% empty %}
-            <div class="empty-card">
-                <div>
-                    <h3>尚未收到回覆</h3>
-                    <p>當問卷開始蒐集資料後，這裡會顯示最新顧客互動，方便你快速掌握現況。</p>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+        </div>
+    </article>
 </section>
 {% endblock %}

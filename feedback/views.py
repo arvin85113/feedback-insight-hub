@@ -1,9 +1,7 @@
-from datetime import timedelta
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -17,17 +15,8 @@ from .forms import (
     SurveyCreateForm,
     SurveyFormBuilder,
 )
-from .models import (
-    Answer,
-    FeedbackSubmission,
-    ImprovementDispatch,
-    ImprovementUpdate,
-    Question,
-    Survey,
-    chart_summary,
-    keyword_summary,
-    recommend_analysis,
-)
+from .models import ImprovementDispatch, ImprovementUpdate, Question, Survey
+from .service_client import service_client
 
 
 class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -45,7 +34,7 @@ class DashboardBaseMixin(ManagerRequiredMixin):
         ("feedback:dashboard", "營運總覽", "grid"),
         ("feedback:survey-manager", "問卷管理", "clipboard"),
         ("feedback:stats-overview", "統計分析", "chart"),
-        ("feedback:text-analysis", "文字分析", "message"),
+        ("feedback:text-analysis", "文字洞察", "message"),
         ("feedback:improvement-list", "改善追蹤", "wrench"),
         ("feedback:notice-center", "通知中心", "send"),
     ]
@@ -65,37 +54,28 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        surveys = Survey.objects.filter(is_active=True).annotate(response_total=Count("submissions"))
-        total_surveys = surveys.count()
-        total_responses = FeedbackSubmission.objects.count()
-        total_improvements = ImprovementUpdate.objects.count()
+        context.update(service_client.get_home())
         context.update(
             {
-                "surveys": surveys[:6],
-                "active_survey_count": total_surveys,
-                "response_count": total_responses,
-                "improvement_count": total_improvements,
-                "managed_clients": max(12, total_surveys * 3 or 12),
-                "response_velocity": round(total_responses / total_surveys, 1) if total_surveys else 0,
                 "featured_capabilities": [
                     {
-                        "title": "Structured Feedback Pipeline",
-                        "description": "從建立問卷、收集回覆、整理文字洞察到發布改善通知，讓團隊在同一條流程中管理整個回饋閉環。",
+                        "title": "Survey Operations",
+                        "description": "統一管理問卷、題型與填答入口，讓前台首頁與後台配置維持同一套產品語言。",
                     },
                     {
-                        "title": "Customer Notification Control",
-                        "description": "顧客可以選擇是否接收後續改善更新，平台也會保留每一筆填答與通知紀錄，降低溝通落差。",
+                        "title": "Customer Follow-up",
+                        "description": "顧客登入後可查看自己填過的問卷與改善通知，形成完整的回饋閉環。",
                     },
                     {
-                        "title": "Manager Command Console",
-                        "description": "管理端集中呈現問卷、回覆、分類、改善與通知進度，方便用正式工作台方式追蹤營運狀態。",
+                        "title": "Insight Workspace",
+                        "description": "管理端集中檢視量化統計、文字關鍵字與改善追蹤，維持正式 SaaS 工作流。",
                     },
                 ],
                 "homepage_steps": [
-                    "建立正式對外問卷與填答入口。",
-                    "收集顧客回饋並保留後續通知授權。",
-                    "整理文字關鍵字與基礎統計摘要。",
-                    "發布改善更新並追蹤通知是否送達。",
+                    "建立正式問卷與填答模式",
+                    "收集回覆並沉澱顧客原聲",
+                    "從統計與文字分析提取線索",
+                    "發布改善並回推通知給顧客",
                 ],
             }
         )
@@ -107,40 +87,7 @@ class CustomerHomeView(CustomerRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        submissions = (
-            FeedbackSubmission.objects.filter(user=self.request.user)
-            .select_related("survey")
-            .prefetch_related("answers")
-            .order_by("-submitted_at")
-        )
-        notices = (
-            ImprovementDispatch.objects.filter(submission__user=self.request.user)
-            .select_related("improvement", "submission", "submission__survey")
-            .order_by("-sent_at")
-        )
-        submission_rows = []
-        for submission in submissions[:8]:
-            related_notice = notices.filter(submission=submission).first()
-            submission_rows.append(
-                {
-                    "submission": submission,
-                    "answer_count": submission.answers.count(),
-                    "latest_notice": related_notice,
-                }
-            )
-
-        context.update(
-            {
-                "submissions": submissions,
-                "notices": notices[:10],
-                "submission_rows": submission_rows,
-                "submission_count": submissions.count(),
-                "active_follow_up_count": submissions.filter(consent_follow_up=True).count(),
-                "latest_submission": submissions.first(),
-                "latest_notice": notices.first(),
-                "subscribed_survey_count": submissions.values("survey").distinct().count(),
-            }
-        )
+        context.update(service_client.get_customer_home(self.request.user))
         return context
 
 
@@ -149,19 +96,8 @@ class CustomerNotificationsView(CustomerRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        notices = (
-            ImprovementDispatch.objects.filter(submission__user=self.request.user)
-            .select_related("improvement", "submission", "submission__survey")
-            .order_by("-sent_at")
-        )
-        context.update(
-            {
-                "notices": notices,
-                "notification_opt_in": self.request.user.notification_opt_in,
-                "notice_count": notices.count(),
-                "latest_notice": notices.first(),
-            }
-        )
+        context.update(service_client.get_customer_notifications(self.request.user))
+        context["notification_opt_in"] = self.request.user.notification_opt_in
         return context
 
 
@@ -171,62 +107,8 @@ class DashboardView(DashboardBaseMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        surveys = Survey.objects.prefetch_related("questions", "keyword_categories").all()
-        submissions = FeedbackSubmission.objects.select_related("survey")
-        improvements = ImprovementUpdate.objects.select_related("survey").all()
-        last_week = timezone.now() - timedelta(days=6)
-
-        daily_counts = []
-        for index in range(7):
-            target_day = (last_week + timedelta(days=index)).date()
-            total = submissions.filter(submitted_at__date=target_day).count()
-            daily_counts.append({"label": target_day.strftime("%m/%d"), "total": total})
-
-        total_surveys = surveys.count()
-        total_submissions = submissions.count()
-        total_improvements = improvements.count()
-        avg_responses = round(total_submissions / total_surveys, 1) if total_surveys else 0
-
-        top_surveys = sorted(surveys, key=lambda survey: survey.submissions.count(), reverse=True)[:5]
-        recent_responses = submissions.order_by("-submitted_at")[:6]
-        latest_improvements = improvements[:5]
-
         context.update(self.get_dashboard_base_context())
-        context.update(
-            {
-                "metrics": [
-                    {
-                        "label": "啟用中問卷",
-                        "value": total_surveys,
-                        "hint": f"{surveys.filter(is_active=True).count()} 份目前對外開放",
-                        "accent": "blue",
-                    },
-                    {
-                        "label": "累積回覆數",
-                        "value": total_submissions,
-                        "hint": "包含登入與免登入來源",
-                        "accent": "violet",
-                    },
-                    {
-                        "label": "改善更新數",
-                        "value": total_improvements,
-                        "hint": f"{improvements.filter(emailed_at__isnull=False).count()} 則已完成通知",
-                        "accent": "green",
-                    },
-                    {
-                        "label": "平均每份回覆",
-                        "value": avg_responses,
-                        "hint": "作為問卷活躍度的基礎觀察",
-                        "accent": "amber",
-                    },
-                ],
-                "daily_counts": daily_counts,
-                "recent_surveys": surveys[:5],
-                "top_surveys": top_surveys,
-                "recent_responses": recent_responses,
-                "latest_improvements": latest_improvements,
-            }
-        )
+        context.update(service_client.get_dashboard())
         return context
 
 
@@ -252,7 +134,7 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, "問卷已建立，接著可以新增題目並設定分享方式。")
+        messages.success(self.request, "問卷已建立，接著可以進入題目編輯器完成配置。")
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -275,9 +157,9 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
         )
         context["responses_count"] = self.object.submissions.count()
         context["builder_tabs"] = [
-            {"key": "questions", "label": "題目編排"},
-            {"key": "responses", "label": "回覆狀況"},
-            {"key": "settings", "label": "入口設定"},
+            {"key": "questions", "label": "題目設定"},
+            {"key": "responses", "label": "回覆概況"},
+            {"key": "settings", "label": "問卷設定"},
         ]
         return context
 
@@ -313,19 +195,9 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        context["charts"] = chart_summary(survey) if survey else []
-        context["question_analysis"] = (
-            [
-                {
-                    "title": question.title,
-                    "data_type": question.get_data_type_display(),
-                    "analysis": recommend_analysis(question),
-                }
-                for question in survey.questions.all()
-            ]
-            if survey
-            else []
-        )
+        payload = service_client.get_stats(selected_slug) if selected_slug else {"charts": [], "question_analysis": []}
+        context["charts"] = payload["charts"]
+        context["question_analysis"] = payload["question_analysis"]
         return context
 
 
@@ -339,7 +211,7 @@ class TextAnalysisView(DashboardBaseMixin, TemplateView):
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        context["keywords"] = keyword_summary(survey) if survey else []
+        context["keywords"] = service_client.get_text_analysis(selected_slug)["keywords"] if selected_slug else []
         context["text_questions"] = survey.questions.filter(data_type=Question.DataType.TEXT) if survey else []
         return context
 
@@ -376,7 +248,7 @@ class SurveyDetailView(DetailView):
     def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
         if self.object.access_mode == Survey.AccessMode.LOGIN and not request.user.is_authenticated:
-            messages.warning(request, "這份問卷需要先登入才能填寫。")
+            messages.warning(request, "這份問卷需要先登入後才能填答。")
             return redirect(f"{reverse('accounts:login')}?next={request.path}")
         return super().dispatch(request, *args, **kwargs)
 
@@ -403,27 +275,22 @@ class SurveyDetailView(DetailView):
                 request.user.notification_opt_in = consent_follow_up
                 request.user.save(update_fields=["notification_opt_in"])
 
-            submission = FeedbackSubmission.objects.create(
-                survey=self.object,
+            submission_result = service_client.submit_survey(
+                self.object,
                 user=request.user if request.user.is_authenticated else None,
                 respondent_name=quick_form.cleaned_data["respondent_name"],
                 respondent_email=quick_form.cleaned_data["respondent_email"],
                 consent_follow_up=consent_follow_up,
                 source=Survey.AccessMode.LOGIN if request.user.is_authenticated else Survey.AccessMode.QUICK,
+                answers={key: value for key, value in form.cleaned_data.items()},
             )
-            for question in self.object.questions.all():
-                key = f"question_{question.id}"
-                value = form.cleaned_data.get(key)
-                if isinstance(value, list):
-                    value = ", ".join(value)
-                Answer.objects.create(submission=submission, question=question, value=value)
 
-            if self.object.thank_you_email_enabled and submission.respondent_email:
+            if submission_result["thank_you_email_enabled"] and submission_result["respondent_email"]:
                 send_mail(
-                    subject=f"感謝你填寫 {self.object.title}",
-                    message="我們已收到你的回覆，後續若有改善更新，會依你的通知偏好提供後續資訊。",
+                    subject=f"感謝填寫 {submission_result['survey_title']}",
+                    message="我們已收到你的回覆。若後續有對應的改善通知，將依你的偏好主動提供最新進度。",
                     from_email=None,
-                    recipient_list=[submission.respondent_email],
+                    recipient_list=[submission_result["respondent_email"]],
                     fail_silently=True,
                 )
             return HttpResponseRedirect(reverse("feedback:survey-success", args=[self.object.slug]))
@@ -474,8 +341,8 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
                 submission=submission,
                 defaults={
                     "personalized_note": (
-                        f"你會收到這則通知，是因為你曾對「{form.instance.related_category or self.survey.title}」"
-                        "相關內容提供回饋，我們已根據意見展開改善。"
+                        f"你先前在 {form.instance.related_category or self.survey.title} 提供的回饋，"
+                        "已被納入這次改善項目中，因此我們主動把最新進度同步給你。"
                     )
                 },
             )
@@ -483,7 +350,7 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
                 continue
 
             send_mail(
-                subject=f"{self.survey.title} 改善更新通知",
+                subject=f"{self.survey.title} 改善進度通知",
                 message=f"{form.instance.title}\n\n{form.instance.summary}",
                 from_email=None,
                 recipient_list=[submission.respondent_email],
@@ -494,7 +361,7 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
         if sent_count:
             form.instance.emailed_at = timezone.now()
             form.instance.save(update_fields=["emailed_at"])
-        messages.success(self.request, "改善項目已建立，並完成通知派送。")
+        messages.success(self.request, f"改善通知已建立，並成功寄送給 {sent_count} 位填答者。")
         return response
 
     def get_success_url(self):

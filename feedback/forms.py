@@ -48,10 +48,10 @@ class ImprovementUpdateForm(forms.ModelForm):
         model = ImprovementUpdate
         fields = ("title", "summary", "related_category", "send_global_notice")
         labels = {
-            "title": "改善標題",
-            "summary": "改善內容摘要",
+            "title": "改善主題",
+            "summary": "改善摘要",
             "related_category": "對應分類",
-            "send_global_notice": "對所有已訂閱顧客發送",
+            "send_global_notice": "寄送給符合條件的填答者",
         }
 
 
@@ -68,11 +68,11 @@ class SurveyCreateForm(forms.ModelForm):
             "is_active",
         )
         labels = {
-            "title": "問卷標題",
-            "slug": "網址識別碼",
+            "title": "問卷名稱",
+            "slug": "網址代號",
             "description": "問卷說明",
-            "access_mode": "開放模式",
-            "thank_you_email_enabled": "送出後寄送感謝信",
+            "access_mode": "填答模式",
+            "thank_you_email_enabled": "完成後寄送確認信",
             "improvement_tracking_enabled": "啟用改善追蹤",
             "is_active": "立即啟用問卷",
         }
@@ -95,21 +95,21 @@ class QuestionCreateForm(forms.ModelForm):
             "order",
         )
         labels = {
-            "title": "題目標題",
-            "help_text": "輔助說明",
-            "kind": "題型",
+            "title": "題目名稱",
+            "help_text": "補充說明",
+            "kind": "作答形式",
             "data_type": "資料型態",
             "options_text": "選項內容",
             "is_required": "必填",
-            "enable_keyword_tracking": "啟用文字關鍵字分析",
+            "enable_keyword_tracking": "納入文字關鍵字分析",
             "order": "排序",
         }
         widgets = {
             "options_text": forms.Textarea(
                 attrs={
                     "rows": 5,
-                    "placeholder": "每一行輸入一個選項，例如：\n非常滿意\n滿意\n普通",
+                    "placeholder": "每行一個選項\n例如：\n非常滿意\n滿意\n普通\n不滿意",
                 }
             ),
-            "help_text": forms.TextInput(attrs={"placeholder": "可補充作答說明、填寫範圍或評分方式"}),
+            "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照最近一次使用經驗作答"}),
         }

@@ -12,3 +12,15 @@ services:
         generateValue: true
       - key: DEBUG
         value: false
+      - key: FEEDBACK_SERVICE_URL
+        value: "http://feedback-domain-service:10000"
+
+  - type: pserv
+    name: feedback-domain-service
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python -m gunicorn services.feedback_service.app:app --bind 0.0.0.0:10000"
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.2

@@ -6,25 +6,25 @@
 <section class="auth-layout auth-layout-wide">
     <article class="auth-copy">
         <p class="section-kicker">Secure Access</p>
-        <h1>登入 FeedBack IQ 工作空間</h1>
+        <h1>登入 FeedBack IQ 工作區</h1>
         <p>
-            以同一組帳號切換顧客中心與管理後台。顧客可查看填答紀錄與改善通知，管理者可進入
-            問卷、統計、文字分析與改善追蹤工作台。
+            管理者可進入營運後台查看問卷、分析與改善追蹤；顧客則可登入顧客中心查看自己提交過的問卷、
+            通知紀錄與通知偏好設定。所有角色都使用同一個安全登入入口。
         </p>
         <div class="summary-grid">
             <div class="summary-card">
-                <span class="info-label">顧客端</span>
-                <strong>我的填答、通知與偏好設定</strong>
+                <span class="info-label">管理端</span>
+                <strong>查看儀表板、分析報表與改善任務</strong>
             </div>
             <div class="summary-card">
-                <span class="info-label">管理端</span>
-                <strong>問卷營運、統計分析與改善發布</strong>
+                <span class="info-label">顧客端</span>
+                <strong>查看填答紀錄、通知更新與個人偏好</strong>
             </div>
         </div>
     </article>
     <article class="auth-card">
         <div class="panel-head">
-            <h2>登入帳號</h2>
+            <h2>登入帳戶</h2>
             <span class="pill">SaaS Workspace</span>
         </div>
         <form method="post" class="form-stack">
@@ -39,8 +39,8 @@
             <button type="submit" class="button button-primary button-wide">登入</button>
         </form>
         <p class="auth-link-row">
-            還沒有帳號？
-            <a href="{% url 'accounts:signup' %}">建立顧客帳號</a>
+            還沒有帳戶？
+            <a href="{% url 'accounts:signup' %}">建立顧客帳戶</a>
         </p>
     </article>
 </section>

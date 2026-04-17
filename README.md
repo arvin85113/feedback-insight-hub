@@ -1,111 +1,79 @@
 # Feedback Insight Hub
 
-以 Django 製作的「使用者回饋與統計分析平台」專題骨架，目前發布至 GitHub，並部署於 Render。
+以 Django 作為門面層，負責：
 
-## 專題定位
+- 使用者驗證與角色分流
+- 模板頁面與後台入口
+- Django Admin 與帳號管理
 
-這個版本把重點放在「平台」而不是單一問卷子系統：
+以 Flask 作為 feedback domain 微服務，負責：
 
-- 前台分成正式登入介面與快捷收集介面
-- 後台有角色登入與管理儀表板
-- 問題建立時可先定義資料型態
-- 依題目資料型態推薦後續統計分析方式
-- 文字回饋可做關鍵字萃取、分類候選與質性整理
-- 可建立產品改進追蹤通知，寄給同意追蹤的用戶
+- 首頁統計摘要
+- 顧客端回饋紀錄與通知列表
+- 管理端儀表板彙整
+- 問卷提交寫入
+- 統計分析與文字分析 API
 
-## 目前功能
+## 架構
 
-- `accounts`
-  - 客戶註冊
-  - 客戶 / 管理人員角色區分
-  - 登入 / 登出
-  - 以環境變數自動建立管理員
-- `feedback`
-  - 問卷 `Survey`
-  - 題目 `Question`
-  - 回覆 `FeedbackSubmission` 與 `Answer`
-  - 關鍵字分類 `KeywordCategory`
-  - 改進追蹤 `ImprovementUpdate` / `ImprovementDispatch`
-- 頁面
-  - 首頁
-  - 正式填答頁
-  - 快捷收集頁
-  - 後台儀表板
-  - 改進通知建立頁
+- `accounts/`
+  - Django 帳號、登入、偏好設定
+- `feedback/`
+  - Django façade views
+  - 問卷建置與改善公告管理
+  - Flask service client
+- `services/feedback_service/`
+  - Flask app
+  - SQLAlchemy data access
+  - feedback domain API
 
-## 本機執行
+## 本機啟動
+
+1. 安裝依賴
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python manage.py makemigrations
+```
+
+2. 初始化 Django
+
+```bash
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py ensure_superuser
 python manage.py seed_demo
+```
+
+3. 啟動 Flask 微服務
+
+```bash
+python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 5001
+```
+
+4. 啟動 Django façade
+
+```bash
 python manage.py runserver
 ```
 
-進入後台：
+若未設定 `FEEDBACK_SERVICE_URL`，Django 會退回本地 provider，方便單機開發；設定後則會優先呼叫 Flask 微服務。
 
-- Django Admin: `http://127.0.0.1:8000/admin/`
-- 平台首頁: `http://127.0.0.1:8000/`
-
-## 建議展示流程
-
-1. 以 admin 建立一份問卷與數個題目
-   或直接執行 `python manage.py seed_demo`
-2. 其中數值題先標記為 `continuous` 或 `discrete`
-3. 文字題勾選 `enable_keyword_tracking`
-4. 以正式頁面或快捷頁面送出數筆回覆
-5. 以管理者登入後台儀表板查看：
-   - 描述性統計
-   - 關鍵字分類候選
-   - 每題適合的統計分析方式
-6. 建立一筆改進追蹤通知，模擬後續寄信
-
-## Render 部署
-
-本專案已附：
-
-- `requirements.txt`
-- `build.sh`
-- `render.yaml`
-- `runtime.txt`
-
-### Render 設定步驟
-
-1. 連接 GitHub repository
-2. Build Command 設為 `./build.sh`
-3. Start Command 設為 `python -m gunicorn config.wsgi:application`
-4. 環境變數至少包含：
+## 重要環境變數
 
 ```text
-DJANGO_SECRET_KEY=<隨機長字串>
-DEBUG=false
-ALLOWED_HOSTS=.onrender.com
+DJANGO_SECRET_KEY=replace-me
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+DEFAULT_FROM_EMAIL=noreply@example.com
+FEEDBACK_SERVICE_URL=http://127.0.0.1:5001
 ```
 
-5. 若使用免費方案且不能用 Shell，可額外設定：
+## Render Blueprint
 
-```text
-ADMIN_USERNAME=admin
-ADMIN_EMAIL=your_email@example.com
-ADMIN_PASSWORD=your_password
-```
+`render.yaml` 已拆成兩個 service：
 
-部署時會自動：
+- `feedback-insight-hub`: Django 對外 Web Service
+- `feedback-domain-service`: Flask 私有服務
 
-- 執行 migration
-- 建立或更新管理員帳號
-- 建立示範問卷資料
-- 收集靜態檔案
-
-## 後續建議強化
-
-- 加入真正的卡方檢定、T 檢定、相關分析模組
-- 串接 `pandas`、`scipy`、`plotly`
-- 產生實際文字雲圖片
-- 增加 QRCode 產生功能
-- 增加表單設計器 UI
-- 增加 email 樣板與批次寄送紀錄
+Django 透過內網 URL 呼叫 Flask 服務；兩者共用同一份 `DATABASE_URL`。
