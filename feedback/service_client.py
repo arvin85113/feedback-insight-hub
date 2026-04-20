@@ -13,6 +13,7 @@ class FeedbackServiceClient:
         self.read_timeout = float(os.getenv("FEEDBACK_SERVICE_READ_TIMEOUT", "0.8"))
         self.failure_cooldown = float(os.getenv("FEEDBACK_SERVICE_FAILURE_COOLDOWN", "30"))
         self._disabled_until = 0.0
+        self._session = requests.Session()
 
     def _service_available(self):
         return bool(self.base_url) and time.monotonic() >= self._disabled_until
@@ -21,7 +22,7 @@ class FeedbackServiceClient:
         self._disabled_until = time.monotonic() + self.failure_cooldown
 
     def _get(self, path, *, params=None):
-        response = requests.get(
+        response = self._session.get(
             f"{self.base_url}{path}",
             params=params,
             timeout=(self.connect_timeout, self.read_timeout),
@@ -30,7 +31,7 @@ class FeedbackServiceClient:
         return response.json()
 
     def _post(self, path, payload):
-        response = requests.post(
+        response = self._session.post(
             f"{self.base_url}{path}",
             json=payload,
             timeout=(self.connect_timeout, self.read_timeout),

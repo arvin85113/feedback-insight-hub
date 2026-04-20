@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from .models import (
@@ -90,36 +92,41 @@ def get_home_payload():
 
 
 def get_customer_home_payload(user):
-    submissions = (
+    submissions = list(
         FeedbackSubmission.objects.filter(user=user)
         .select_related("survey")
         .prefetch_related("answers")
         .order_by("-submitted_at")
     )
-    notices = (
+    notices = list(
         ImprovementDispatch.objects.filter(submission__user=user)
         .select_related("improvement", "submission", "submission__survey")
         .order_by("-sent_at")
     )
+    notices_by_submission = {}
+    for notice in notices:
+        notices_by_submission.setdefault(notice.submission_id, notice)
+
     submission_rows = []
     for submission in submissions[:8]:
-        related_notice = notices.filter(submission=submission).first()
+        related_notice = notices_by_submission.get(submission.id)
+        answer_count = submission.answers.count()
         submission_rows.append(
             {
-                "submission": serialize_submission(submission, submission.answers.count()),
-                "answer_count": submission.answers.count(),
+                "submission": serialize_submission(submission, answer_count),
+                "answer_count": answer_count,
                 "latest_notice": serialize_notice(related_notice) if related_notice else None,
             }
         )
     return {
-        "submissions": [serialize_submission(submission, submission.answers.count()) for submission in submissions],
-        "notices": [serialize_notice(notice) for notice in notices[:10]],
+        "submissions": [serialize_submission(s, s.answers.count()) for s in submissions],
+        "notices": [serialize_notice(n) for n in notices[:10]],
         "submission_rows": submission_rows,
-        "submission_count": submissions.count(),
-        "active_follow_up_count": submissions.filter(consent_follow_up=True).count(),
-        "latest_submission": serialize_submission(submissions.first(), submissions.first().answers.count()) if submissions.exists() else None,
-        "latest_notice": serialize_notice(notices.first()) if notices.exists() else None,
-        "subscribed_survey_count": submissions.values("survey").distinct().count(),
+        "submission_count": len(submissions),
+        "active_follow_up_count": sum(1 for s in submissions if s.consent_follow_up),
+        "latest_submission": serialize_submission(submissions[0], submissions[0].answers.count()) if submissions else None,
+        "latest_notice": serialize_notice(notices[0]) if notices else None,
+        "subscribed_survey_count": len({s.survey_id for s in submissions}),
     }
 
 
@@ -137,23 +144,30 @@ def get_customer_notifications_payload(user):
 
 
 def get_dashboard_payload():
-    surveys = Survey.objects.prefetch_related("questions", "submissions").all()
-    submissions = FeedbackSubmission.objects.select_related("survey").all()
     improvements = ImprovementUpdate.objects.select_related("survey").all()
     last_week = timezone.now() - timedelta(days=6)
 
-    daily_counts = []
-    for index in range(7):
-        target_day = (last_week + timedelta(days=index)).date()
-        total = submissions.filter(submitted_at__date=target_day).count()
-        daily_counts.append({"label": target_day.strftime("%m/%d"), "total": total})
+    daily_qs = (
+        FeedbackSubmission.objects.filter(submitted_at__gte=last_week)
+        .annotate(day=TruncDate("submitted_at"))
+        .values("day")
+        .annotate(total=Count("id"))
+    )
+    counts_by_day = {row["day"]: row["total"] for row in daily_qs}
+    daily_counts = [
+        {
+            "label": (last_week + timedelta(days=i)).date().strftime("%m/%d"),
+            "total": counts_by_day.get((last_week + timedelta(days=i)).date(), 0),
+        }
+        for i in range(7)
+    ]
 
-    total_surveys = surveys.count()
-    total_submissions = submissions.count()
+    total_surveys = Survey.objects.count()
+    total_submissions = FeedbackSubmission.objects.count()
     total_improvements = improvements.count()
     avg_responses = round(total_submissions / total_surveys, 1) if total_surveys else 0
-    top_surveys = sorted(surveys, key=lambda survey: survey.submissions.count(), reverse=True)[:5]
-    recent_responses = submissions.order_by("-submitted_at")[:6]
+    top_surveys = list(Survey.objects.annotate(sub_count=Count("submissions")).order_by("-sub_count")[:5])
+    recent_responses = FeedbackSubmission.objects.select_related("survey", "user").order_by("-submitted_at")[:6]
     latest_improvements = improvements[:5]
     active_surveys = surveys.filter(is_active=True).count()
     emailed_improvements = improvements.filter(emailed_at__isnull=False).count()
@@ -224,7 +238,7 @@ def get_dashboard_payload():
             },
         ],
         "daily_counts": daily_counts,
-        "top_surveys": [serialize_survey(survey, survey.submissions.count()) for survey in top_surveys],
+        "top_surveys": [serialize_survey(survey, survey.sub_count) for survey in top_surveys],
         "recent_responses": [serialize_submission(item) for item in recent_responses],
         "latest_improvements": [
             {

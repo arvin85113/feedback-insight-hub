@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, request
@@ -175,11 +176,39 @@ def customer_notifications(user_id: int):
 @app.get("/api/dashboard")
 def dashboard():
     with session_scope() as session:
-        surveys = session.scalars(select(Survey).options(joinedload(Survey.submissions), joinedload(Survey.questions)).order_by(Survey.title)).unique().all()
-        submissions = session.scalars(
+        start = datetime.now().date() - timedelta(days=6)
+
+        daily_qs = session.execute(
+            select(
+                func.date(FeedbackSubmission.submitted_at).label("day"),
+                func.count(FeedbackSubmission.id).label("total"),
+            )
+            .where(FeedbackSubmission.submitted_at >= start)
+            .group_by(func.date(FeedbackSubmission.submitted_at))
+        ).all()
+        counts_by_day = {str(row.day): row.total for row in daily_qs}
+        daily_counts = [
+            {
+                "label": (start + timedelta(days=offset)).strftime("%m/%d"),
+                "total": counts_by_day.get(str(start + timedelta(days=offset)), 0),
+            }
+            for offset in range(7)
+        ]
+
+        response_counts = dict(
+            session.execute(
+                select(FeedbackSubmission.survey_id, func.count(FeedbackSubmission.id))
+                .group_by(FeedbackSubmission.survey_id)
+            ).all()
+        )
+        surveys = session.scalars(
+            select(Survey).options(joinedload(Survey.questions)).order_by(Survey.title)
+        ).unique().all()
+        recent_submissions = session.scalars(
             select(FeedbackSubmission)
             .options(joinedload(FeedbackSubmission.survey), joinedload(FeedbackSubmission.user))
             .order_by(FeedbackSubmission.submitted_at.desc())
+            .limit(6)
         ).unique().all()
         improvements = session.scalars(
             select(ImprovementUpdate)
@@ -187,16 +216,9 @@ def dashboard():
             .order_by(ImprovementUpdate.created_at.desc())
         ).unique().all()
 
-        start = datetime.now().date() - timedelta(days=6)
-        daily_counts = []
-        for offset in range(7):
-            target_day = start + timedelta(days=offset)
-            total = sum(1 for item in submissions if item.submitted_at.date() == target_day)
-            daily_counts.append({"label": target_day.strftime("%m/%d"), "total": total})
-
-        top_surveys = sorted(surveys, key=lambda item: len(item.submissions), reverse=True)[:5]
+        top_surveys = sorted(surveys, key=lambda item: response_counts.get(item.id, 0), reverse=True)[:5]
         total_surveys = len(surveys)
-        total_submissions = len(submissions)
+        total_submissions = session.scalar(select(func.count(FeedbackSubmission.id))) or 0
         total_improvements = len(improvements)
         active_surveys = sum(1 for item in surveys if item.is_active)
         emailed_improvements = sum(1 for item in improvements if item.emailed_at)
@@ -236,8 +258,8 @@ def dashboard():
                     },
                 ],
                 "daily_counts": daily_counts,
-                "top_surveys": [serialize_survey(item, len(item.submissions)) for item in top_surveys],
-                "recent_responses": [serialize_submission(item) for item in submissions[:6]],
+                "top_surveys": [serialize_survey(item, response_counts.get(item.id, 0)) for item in top_surveys],
+                "recent_responses": [serialize_submission(item) for item in recent_submissions],
                 "latest_improvements": [
                     {
                         "id": item.id,
@@ -281,10 +303,17 @@ def stats():
         if not survey:
             return jsonify({"charts": [], "question_analysis": []})
         questions = session.scalars(select(Question).where(Question.survey_id == survey.id).order_by(Question.order)).all()
+        all_answers = session.scalars(
+            select(Answer).where(Answer.question_id.in_([q.id for q in questions]))
+        ).all()
+        answers_by_qid = defaultdict(list)
+        for a in all_answers:
+            answers_by_qid[a.question_id].append(a)
+
         charts = []
         question_analysis = []
         for question in questions:
-            answers = session.scalars(select(Answer).where(Answer.question_id == question.id)).all()
+            answers = answers_by_qid[question.id]
             if question.kind in {"integer", "decimal", "scale"}:
                 numeric_values = []
                 for answer in answers:
