@@ -9,6 +9,14 @@ ACCESS_MODE_LABELS = {
     "hybrid": "雙入口模式",
 }
 
+DATA_TYPE_LABELS = {
+    "nominal": "名目",
+    "ordinal": "順序",
+    "discrete": "離散",
+    "continuous": "連續",
+    "text": "文字",
+}
+
 STOP_WORDS = {
     "我們",
     "你們",
@@ -30,11 +38,15 @@ def tokenize_feedback(text: str) -> list[str]:
     return [token for token in tokens if token not in STOP_WORDS]
 
 
-def summarize_keywords(answer_values: list[str]) -> list[dict]:
+def summarize_keywords(answer_values: list[str], category_map: dict[str, str] | None = None) -> list[dict]:
     counts = Counter()
     for value in answer_values:
         counts.update(tokenize_feedback(value))
-    return [{"keyword": word, "count": count} for word, count in counts.most_common(20)]
+    category_map = category_map or {}
+    return [
+        {"keyword": word, "count": count, "category": category_map.get(word, "未分類")}
+        for word, count in counts.most_common(20)
+    ]
 
 
 def summarize_numeric(values: list[float]) -> dict | None:

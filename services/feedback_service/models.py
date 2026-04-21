@@ -99,6 +99,16 @@ class ImprovementUpdate(Base):
     survey: Mapped["Survey"] = relationship(back_populates="improvements")
 
 
+class KeywordCategory(Base):
+    __tablename__ = "feedback_keywordcategory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    survey_id: Mapped[int] = mapped_column(ForeignKey("feedback_survey.id"))
+    keyword: Mapped[str] = mapped_column(String(100))
+    category: Mapped[str] = mapped_column(String(100))
+    threshold: Mapped[int] = mapped_column(Integer, default=2)
+
+
 class ImprovementDispatch(Base):
     __tablename__ = "feedback_improvementdispatch"
 

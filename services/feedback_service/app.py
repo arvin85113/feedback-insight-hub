@@ -5,9 +5,9 @@ from flask import Flask, jsonify, request
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from .analysis import access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
+from .analysis import DATA_TYPE_LABELS, access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
 from .db import session_scope
-from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, Question, Survey, User
+from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, User
 
 
 app = Flask(__name__)
@@ -346,7 +346,7 @@ def stats():
             question_analysis.append(
                 {
                     "title": question.title,
-                    "data_type": question.data_type,
+                    "data_type": DATA_TYPE_LABELS.get(question.data_type, question.data_type),
                     "analysis": analysis,
                 }
             )
@@ -368,7 +368,9 @@ def text_analysis():
             ).all()
         ]
         values = session.scalars(select(Answer.value).where(Answer.question_id.in_(question_ids))).all() if question_ids else []
-        return jsonify({"keywords": summarize_keywords(values)})
+        category_rows = session.scalars(select(KeywordCategory).where(KeywordCategory.survey_id == survey.id)).all()
+        category_map = {row.keyword: row.category for row in category_rows}
+        return jsonify({"keywords": summarize_keywords(values, category_map)})
 
 
 @app.post("/api/surveys/<slug>/submissions")
