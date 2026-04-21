@@ -25,7 +25,7 @@ class Survey(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))
-    slug: Mapped[str] = mapped_column(String(50))
+    slug: Mapped[str] = mapped_column(String(50), unique=True)
     description: Mapped[str] = mapped_column(Text)
     access_mode: Mapped[str] = mapped_column(String(20))
     thank_you_email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
