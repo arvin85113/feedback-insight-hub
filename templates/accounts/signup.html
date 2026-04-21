@@ -17,26 +17,113 @@
             <li>追蹤改善任務發布後的更新內容。</li>
         </ul>
     </article>
+
     <article class="auth-card">
         <div class="panel-head">
             <h2>建立帳戶</h2>
             <span class="pill">Customer Portal</span>
         </div>
+
+        <div class="google-login-block">
+            <button
+                type="button"
+                class="button-google"
+                disabled
+                title="即將推出"
+                aria-disabled="true"
+            >
+                <span class="google-icon" aria-hidden="true">G</span>
+                使用 Google 帳號登入
+            </button>
+        </div>
+
+        <div class="auth-divider">── 或使用 Email 註冊 ──</div>
+
         <form method="post" class="form-stack">
             {% csrf_token %}
-            {% for field in form %}
+
+            <div class="field-block">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {{ form.email.errors }}
+            </div>
+            <div class="field-block">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+                {{ form.username.errors }}
+            </div>
+            <div class="field-block">
+                {{ form.first_name.label_tag }}
+                {{ form.first_name }}
+                {{ form.first_name.errors }}
+            </div>
+            <div class="field-block">
+                {{ form.password1.label_tag }}
+                {{ form.password1 }}
+                {{ form.password1.errors }}
+            </div>
+            <div class="field-block">
+                {{ form.password2.label_tag }}
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </div>
+            <div class="field-block field-block-checkbox">
+                <label class="checkbox-label">
+                    {{ form.notification_opt_in }}
+                    接收改善通知（預設開啟）
+                </label>
+                {{ form.notification_opt_in.errors }}
+            </div>
+
+            <button
+                type="button"
+                class="more-options-toggle"
+                id="more-options-toggle"
+                onclick="toggleMoreOptions()"
+                aria-expanded="false"
+                aria-controls="more-options-panel"
+            >
+                ＋ 更多選項
+            </button>
+
+            <div class="more-options-panel" id="more-options-panel">
                 <div class="field-block">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {{ field.errors }}
+                    {{ form.last_name.label_tag }}
+                    {{ form.last_name }}
+                    {{ form.last_name.errors }}
                 </div>
-            {% endfor %}
+                <div class="field-block">
+                    {{ form.organization.label_tag }}
+                    {{ form.organization }}
+                    {{ form.organization.errors }}
+                </div>
+            </div>
+
             <button type="submit" class="button button-primary button-wide">建立帳戶</button>
         </form>
+
         <p class="auth-link-row">
             已經有帳戶？
             <a href="{% url 'accounts:login' %}">直接登入</a>
         </p>
     </article>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const lastNameInput = document.querySelector('[name="last_name"]');
+        const orgInput = document.querySelector('[name="organization"]');
+        if (lastNameInput) lastNameInput.placeholder = '選填';
+        if (orgInput) orgInput.placeholder = '選填';
+    });
+
+    function toggleMoreOptions() {
+        const panel = document.getElementById('more-options-panel');
+        const toggle = document.getElementById('more-options-toggle');
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open', !isOpen);
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+        toggle.textContent = isOpen ? '＋ 更多選項' : '－ 收起選項';
+    }
+</script>
 {% endblock %}

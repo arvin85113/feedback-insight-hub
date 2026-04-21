@@ -1075,3 +1075,92 @@ ul.errorlist {
     align-items: center;
 }
 }
+
+/* ── Signup: Google login block ── */
+.google-login-block {
+    margin-bottom: 16px;
+}
+
+.button-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 20px;
+    background: var(--surface-strong);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: not-allowed;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+}
+
+.google-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ── Signup: divider ── */
+.auth-divider {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 4px 0 16px;
+    letter-spacing: 0.02em;
+}
+
+/* ── Signup: more options toggle ── */
+.more-options-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--brand);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: color 0.15s;
+}
+
+.more-options-toggle:hover {
+    color: var(--brand-deep);
+}
+
+/* ── Signup: collapsible secondary fields ── */
+.more-options-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+    overflow: hidden;
+}
+
+.more-options-panel > * {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.more-options-panel.open {
+    grid-template-rows: 1fr;
+}
+
+/* ── Checkbox label ── */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.92rem;
+}
