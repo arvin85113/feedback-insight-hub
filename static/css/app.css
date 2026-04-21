@@ -622,9 +622,10 @@ ul.errorlist {
 }
 
 .manager-shell {
-    min-height: 100vh;
     display: grid;
     grid-template-columns: 260px 1fr;
+    height: 100vh;
+    overflow: hidden;
     background: #edf0f4;
 }
 
@@ -632,6 +633,15 @@ ul.errorlist {
     padding: 18px;
     background: linear-gradient(180deg, #16243a 0%, #111c2e 100%);
     color: rgba(255, 255, 255, 0.92);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.manager-main {
+    overflow-y: auto;
+    height: 100vh;
 }
 
 .manager-brand {
