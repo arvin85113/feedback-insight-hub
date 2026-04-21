@@ -19,8 +19,6 @@ from .models import (
 
 ACCESS_MODE_LABELS = {
     Survey.AccessMode.LOGIN: "登入後填答",
-    Survey.AccessMode.QUICK: "快速填答",
-    Survey.AccessMode.HYBRID: "雙入口模式",
 }
 
 

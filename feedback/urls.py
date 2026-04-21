@@ -8,7 +8,6 @@ from .views import (
     ImprovementCreateView,
     ImprovementListView,
     NoticeCenterView,
-    QuickSurveyView,
     StatsOverviewView,
     SurveyBuilderView,
     SurveyCreateView,
@@ -33,7 +32,6 @@ urlpatterns = [
     path("dashboard/improvements/", ImprovementListView.as_view(), name="improvement-list"),
     path("dashboard/notices/", NoticeCenterView.as_view(), name="notice-center"),
     path("survey/<slug:slug>/", SurveyDetailView.as_view(), name="survey-detail"),
-    path("survey/<slug:slug>/quick/", QuickSurveyView.as_view(), name="survey-quick"),
     path("survey/<slug:slug>/success/", SurveySubmitSuccessView.as_view(), name="survey-success"),
     path("survey/<slug:slug>/improvement/new/", ImprovementCreateView.as_view(), name="improvement-create"),
 ]

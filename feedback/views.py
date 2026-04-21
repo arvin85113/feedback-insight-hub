@@ -261,7 +261,7 @@ class SurveyDetailView(DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        if self.object.access_mode == Survey.AccessMode.LOGIN and not request.user.is_authenticated:
+        if not request.user.is_authenticated:
             messages.warning(request, "這份問卷需要先登入後才能填答。")
             return redirect(f"{reverse('accounts:login')}?next={request.path}")
         return super().dispatch(request, *args, **kwargs)
@@ -295,7 +295,7 @@ class SurveyDetailView(DetailView):
                 respondent_name=quick_form.cleaned_data["respondent_name"],
                 respondent_email=quick_form.cleaned_data["respondent_email"],
                 consent_follow_up=consent_follow_up,
-                source=Survey.AccessMode.LOGIN if request.user.is_authenticated else Survey.AccessMode.QUICK,
+                source=Survey.AccessMode.LOGIN,
                 answers={key: value for key, value in form.cleaned_data.items()},
             )
 
@@ -311,10 +311,6 @@ class SurveyDetailView(DetailView):
 
         context = self.get_context_data(object=self.object, form=form, quick_form=quick_form)
         return self.render_to_response(context)
-
-
-class QuickSurveyView(SurveyDetailView):
-    template_name = "feedback/survey_quick.html"
 
 
 class SurveySubmitSuccessView(TemplateView):
