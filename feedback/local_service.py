@@ -169,7 +169,7 @@ def get_dashboard_payload():
     top_surveys = list(Survey.objects.annotate(sub_count=Count("submissions")).order_by("-sub_count")[:5])
     recent_responses = FeedbackSubmission.objects.select_related("survey", "user").order_by("-submitted_at")[:6]
     latest_improvements = improvements[:5]
-    active_surveys = surveys.filter(is_active=True).count()
+    active_surveys = Survey.objects.filter(is_active=True).count()
     emailed_improvements = improvements.filter(emailed_at__isnull=False).count()
 
     insights = [
