@@ -12,13 +12,11 @@ class LoginForm(AuthenticationForm):
 class CustomerSignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "first_name", "last_name", "email", "organization", "notification_opt_in")
+        fields = ("username", "first_name", "email", "notification_opt_in")
         labels = {
             "username": "登入帳號",
             "first_name": "名字",
-            "last_name": "姓氏",
             "email": "Email",
-            "organization": "所屬單位",
             "notification_opt_in": "願意接收後續改善通知",
         }
 

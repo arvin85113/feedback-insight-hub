@@ -75,30 +75,6 @@
                 {{ form.notification_opt_in.errors }}
             </div>
 
-            <button
-                type="button"
-                class="more-options-toggle"
-                id="more-options-toggle"
-                onclick="toggleMoreOptions()"
-                aria-expanded="false"
-                aria-controls="more-options-panel"
-            >
-                ＋ 更多選項
-            </button>
-
-            <div class="more-options-panel" id="more-options-panel">
-                <div class="field-block">
-                    {{ form.last_name.label_tag }}
-                    {{ form.last_name }}
-                    {{ form.last_name.errors }}
-                </div>
-                <div class="field-block">
-                    {{ form.organization.label_tag }}
-                    {{ form.organization }}
-                    {{ form.organization.errors }}
-                </div>
-            </div>
-
             <button type="submit" class="button button-primary button-wide">建立帳戶</button>
         </form>
 
@@ -108,22 +84,4 @@
         </p>
     </article>
 </section>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const lastNameInput = document.querySelector('[name="last_name"]');
-        const orgInput = document.querySelector('[name="organization"]');
-        if (lastNameInput) lastNameInput.placeholder = '選填';
-        if (orgInput) orgInput.placeholder = '選填';
-    });
-
-    function toggleMoreOptions() {
-        const panel = document.getElementById('more-options-panel');
-        const toggle = document.getElementById('more-options-toggle');
-        const isOpen = panel.classList.contains('open');
-        panel.classList.toggle('open', !isOpen);
-        toggle.setAttribute('aria-expanded', String(!isOpen));
-        toggle.textContent = isOpen ? '＋ 更多選項' : '－ 收起選項';
-    }
-</script>
 {% endblock %}
