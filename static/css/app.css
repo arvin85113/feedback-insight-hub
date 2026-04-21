@@ -930,3 +930,148 @@ ul.errorlist {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Accordion ── */
+.accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.accordion-item {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--line);
+}
+
+.accordion-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface-strong);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.accordion-trigger:hover {
+    background: var(--accent-soft);
+}
+
+.accordion-trigger[aria-expanded="true"] {
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--line);
+}
+
+.accordion-trigger[aria-expanded="true"] .accordion-chevron {
+    transform: rotate(180deg);
+}
+
+.accordion-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.accordion-chevron {
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: transform 0.2s;
+    font-size: 1.1rem;
+}
+
+.accordion-body {
+    padding: 20px;
+    background: var(--bg-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.accordion-empty {
+    margin: 0;
+}
+
+/* ── Improvement items inside accordion ── */
+.improvement-item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.improvement-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    background: var(--surface-strong);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+}
+
+.improvement-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.improvement-item-main p {
+    margin: 0;
+}
+
+.improvement-item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.improvement-item-meta p {
+    margin: 0;
+}
+
+/* ── Inline form zone ── */
+.inline-form-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.inline-improvement-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    background: var(--surface-strong);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+}
+
+.field-block-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.field-block-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.inline-form-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+}

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
@@ -223,7 +225,19 @@ class ImprovementListView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        context["improvements"] = ImprovementUpdate.objects.select_related("survey").all()
+        all_improvements = ImprovementUpdate.objects.select_related("survey").order_by("survey_id", "-created_at")
+        improvements_by_survey = defaultdict(list)
+        for imp in all_improvements:
+            improvements_by_survey[imp.survey_id].append(imp)
+        surveys = Survey.objects.order_by("title")
+        context["survey_groups"] = [
+            {
+                "survey": survey,
+                "improvements": improvements_by_survey[survey.id],
+                "create_url": reverse("feedback:improvement-create", args=[survey.slug]),
+            }
+            for survey in surveys
+        ]
         return context
 
 
