@@ -5,8 +5,6 @@ from statistics import mean
 
 ACCESS_MODE_LABELS = {
     "login": "登入後填答",
-    "quick": "快速填答",
-    "hybrid": "雙入口模式",
 }
 
 DATA_TYPE_LABELS = {
