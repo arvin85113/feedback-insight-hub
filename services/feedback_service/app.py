@@ -5,12 +5,38 @@ from flask import Flask, jsonify, request
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
+from feedback.text_pipeline import ANALYSIS_VERSION, build_analysis_text, estimate_sentiment_score, tokenize_feedback
+
 from .analysis import DATA_TYPE_LABELS, access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
 from .db import session_scope
 from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, User
 
 
 app = Flask(__name__)
+
+
+def build_category_sentiments(answer_rows, category_map):
+    bucket = {}
+    for row in answer_rows:
+        tokens = tokenize_feedback(row.analysis_text or row.value or "")
+        if not tokens:
+            continue
+        categories = {category_map.get(token, "未分類") for token in tokens}
+        for category in categories:
+            entry = bucket.setdefault(
+                category,
+                {"category": category, "positive": 0, "neutral": 0, "negative": 0, "total": 0},
+            )
+            entry["total"] += 1
+            if row.sentiment_score is None:
+                entry["neutral"] += 1
+            elif row.sentiment_score > 0.1:
+                entry["positive"] += 1
+            elif row.sentiment_score < -0.1:
+                entry["negative"] += 1
+            else:
+                entry["neutral"] += 1
+    return sorted(bucket.values(), key=lambda item: item["total"], reverse=True)
 
 
 def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
@@ -367,10 +393,27 @@ def text_analysis():
                 select(Question).where(Question.survey_id == survey.id, Question.enable_keyword_tracking.is_(True))
             ).all()
         ]
-        values = session.scalars(select(Answer.value).where(Answer.question_id.in_(question_ids))).all() if question_ids else []
+        answer_rows = (
+            session.execute(
+                select(Answer.analysis_text, Answer.value, Answer.sentiment_score).where(Answer.question_id.in_(question_ids))
+            ).all()
+            if question_ids
+            else []
+        )
+        values = [row.analysis_text or row.value for row in answer_rows if (row.analysis_text or row.value)]
+        sentiment_values = [row.sentiment_score for row in answer_rows if row.sentiment_score is not None]
         category_rows = session.scalars(select(KeywordCategory).where(KeywordCategory.survey_id == survey.id)).all()
         category_map = {row.keyword: row.category for row in category_rows}
-        return jsonify({"keywords": summarize_keywords(values, category_map)})
+        summary = {
+            "total_answers": len(answer_rows),
+            "analyzed_answers": sum(1 for row in answer_rows if row.analysis_text),
+            "analysis_coverage": round(sum(1 for row in answer_rows if row.analysis_text) / len(answer_rows), 3)
+            if answer_rows
+            else 0,
+            "avg_sentiment_score": round(sum(sentiment_values) / len(sentiment_values), 3) if sentiment_values else None,
+        }
+        category_sentiments = build_category_sentiments(answer_rows, category_map)
+        return jsonify({"keywords": summarize_keywords(values, category_map), "summary": summary, "category_sentiments": category_sentiments})
 
 
 @app.post("/api/surveys/<slug>/submissions")
@@ -402,7 +445,22 @@ def create_submission(slug: str):
             value = answers[key]
             if isinstance(value, list):
                 value = ", ".join(value)
-            session.add(Answer(submission_id=submission.id, question_id=question.id, value=str(value)))
+            analysis_text = None
+            analysis_version = None
+            if question.kind in {"short_text", "long_text"}:
+                analysis_text = build_analysis_text(value)
+                analysis_version = ANALYSIS_VERSION if analysis_text else None
+            sentiment_score = estimate_sentiment_score(value) if analysis_text else None
+            session.add(
+                Answer(
+                    submission_id=submission.id,
+                    question_id=question.id,
+                    value=str(value),
+                    analysis_text=analysis_text,
+                    sentiment_score=sentiment_score,
+                    analysis_version=analysis_version,
+                )
+            )
 
         return jsonify(
             {

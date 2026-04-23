@@ -14,7 +14,10 @@ from .models import (
     chart_summary,
     keyword_summary,
     recommend_analysis,
+    category_sentiment_summary,
+    text_analysis_summary,
 )
+from .text_pipeline import ANALYSIS_VERSION, build_analysis_text, estimate_sentiment_score
 
 
 ACCESS_MODE_LABELS = {
@@ -273,8 +276,12 @@ def get_stats_payload(slug):
 def get_text_analysis_payload(slug):
     survey = Survey.objects.filter(slug=slug).first() if slug else None
     if not survey:
-        return {"keywords": []}
-    return {"keywords": keyword_summary(survey)}
+        return {"keywords": [], "summary": {}, "category_sentiments": []}
+    return {
+        "keywords": keyword_summary(survey),
+        "summary": text_analysis_summary(survey),
+        "category_sentiments": category_sentiment_summary(survey),
+    }
 
 
 def submit_survey_payload(survey, *, user, respondent_name, respondent_email, consent_follow_up, source, answers):
@@ -293,7 +300,20 @@ def submit_survey_payload(survey, *, user, respondent_name, respondent_email, co
             continue
         if isinstance(value, list):
             value = ", ".join(value)
-        Answer.objects.create(submission=submission, question=question, value=value)
+        analysis_text = None
+        analysis_version = None
+        if question.kind in {Question.Kind.SHORT_TEXT, Question.Kind.LONG_TEXT}:
+            analysis_text = build_analysis_text(value)
+            analysis_version = ANALYSIS_VERSION if analysis_text else None
+        sentiment_score = estimate_sentiment_score(value) if analysis_text else None
+        Answer.objects.create(
+            submission=submission,
+            question=question,
+            value=value,
+            analysis_text=analysis_text,
+            sentiment_score=sentiment_score,
+            analysis_version=analysis_version,
+        )
     return {
         "submission_id": submission.id,
         "thank_you_email_enabled": survey.thank_you_email_enabled,

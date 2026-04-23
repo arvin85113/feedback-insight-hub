@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -80,6 +80,9 @@ class Answer(Base):
     submission_id: Mapped[int] = mapped_column(ForeignKey("feedback_feedbacksubmission.id"))
     question_id: Mapped[int] = mapped_column(ForeignKey("feedback_question.id"))
     value: Mapped[str] = mapped_column(Text)
+    analysis_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    analysis_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     question: Mapped["Question"] = relationship()
 

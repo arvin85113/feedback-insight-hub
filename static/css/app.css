@@ -1181,3 +1181,48 @@ input[type="checkbox"] {
     padding: 0;
     flex-shrink: 0;
 }
+
+.wordcloud-panel {
+    padding: 18px;
+    margin-bottom: 20px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: rgba(245, 249, 253, 0.72);
+}
+
+.wordcloud-panel h3 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+}
+
+.wordcloud-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wordcloud-toggle.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #2f5b8a);
+    box-shadow: 0 10px 20px rgba(26, 53, 84, 0.22);
+}
+
+.wordcloud-canvas {
+    min-height: 210px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px dashed rgba(18, 32, 51, 0.2);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 14px;
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.wordcloud-token {
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}

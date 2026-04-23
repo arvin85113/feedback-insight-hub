@@ -213,7 +213,10 @@ class TextAnalysisView(DashboardBaseMixin, TemplateView):
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        context["keywords"] = service_client.get_text_analysis(selected_slug)["keywords"] if selected_slug else []
+        payload = service_client.get_text_analysis(selected_slug) if selected_slug else {"keywords": [], "summary": {}}
+        context["keywords"] = payload["keywords"]
+        context["analysis_summary"] = payload.get("summary", {})
+        context["category_sentiments"] = payload.get("category_sentiments", [])
         context["text_questions"] = survey.questions.filter(data_type=Question.DataType.TEXT) if survey else []
         return context
 

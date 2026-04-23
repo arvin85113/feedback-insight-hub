@@ -81,3 +81,22 @@ FEEDBACK_SERVICE_FAILURE_COOLDOWN=30
 - `feedback-domain-service`: Flask 私有服務
 
 Django 透過內網 URL 呼叫 Flask 服務；兩者共用同一份 `DATABASE_URL`。
+
+## Schema Migration 協作流程
+
+此專案的 Django 與 Flask 共用同一個資料庫，請遵循以下流程避免協作環境故障：
+
+1. 只用 Django migration 變更 schema，避免在 Supabase Dashboard 手動改欄位。
+2. 新欄位先採 `null=True`（或安全預設值），先確保舊資料可相容。
+3. 變更後同步更新 `services/feedback_service/models.py` 的 SQLAlchemy 欄位定義。
+4. 部署順序建議為：先部署可相容新舊 schema 的程式碼，再執行 `python manage.py migrate`。
+
+本次已新增 `feedback_answer.analysis_text`、`feedback_answer.sentiment_score`、`feedback_answer.analysis_version`，對應 migration：`feedback/migrations/0007_answer_analysis_text_answer_analysis_version_and_more.py`。
+
+歷史資料回填指令：
+
+```bash
+python manage.py rebuild_text_analysis --dry-run
+python manage.py rebuild_text_analysis
+python manage.py rebuild_text_analysis --survey <survey-slug>
+```
