@@ -5,8 +5,6 @@ from feedback.text_pipeline import keyword_counts
 
 ACCESS_MODE_LABELS = {
     "login": "登入後填答",
-    "quick": "快速填答",
-    "hybrid": "雙入口模式",
 }
 
 DATA_TYPE_LABELS = {

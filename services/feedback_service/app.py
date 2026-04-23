@@ -429,7 +429,7 @@ def create_submission(slug: str):
             user_id=payload.get("user_id"),
             respondent_name=payload.get("respondent_name", ""),
             respondent_email=payload.get("respondent_email", ""),
-            source=payload.get("source", "quick"),
+            source=payload.get("source", "login"),
             consent_follow_up=bool(payload.get("consent_follow_up", False)),
             submitted_at=datetime.now(),
         )
