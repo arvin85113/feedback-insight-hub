@@ -8,6 +8,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.generic import CreateView, DetailView, TemplateView
 
 from .forms import (
@@ -136,6 +137,13 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        base = slugify(form.instance.title)
+        slug, n = base, 2
+        while Survey.objects.filter(slug=slug).exists():
+            slug = f"{base}-{n}"
+            n += 1
+        form.instance.slug = slug
+        form.instance.access_mode = Survey.AccessMode.LOGIN
         messages.success(self.request, "問卷已建立，接著可以進入題目編輯器完成配置。")
         return super().form_valid(form)
 

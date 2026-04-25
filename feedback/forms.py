@@ -60,18 +60,14 @@ class SurveyCreateForm(forms.ModelForm):
         model = Survey
         fields = (
             "title",
-            "slug",
             "description",
-            "access_mode",
             "thank_you_email_enabled",
             "improvement_tracking_enabled",
             "is_active",
         )
         labels = {
             "title": "問卷名稱",
-            "slug": "網址代號",
             "description": "問卷說明",
-            "access_mode": "填答模式",
             "thank_you_email_enabled": "完成後寄送確認信",
             "improvement_tracking_enabled": "啟用改善追蹤",
             "is_active": "立即啟用問卷",
