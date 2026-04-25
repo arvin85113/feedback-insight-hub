@@ -12,8 +12,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Install dependencies
-python -m venv .venv
-source .venv/Scripts/activate   # Windows bash
 pip install -r requirements.txt
 
 # Initialize database and seed demo data
@@ -27,6 +25,8 @@ python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 
 # Start Django dev server (port 8000)
 python manage.py runserver
 ```
+
+`.env` is auto-loaded via `python-dotenv` at `config/settings.py` startup. Copy `.env.example` to `.env` before first run.
 
 ### Production (Render)
 
@@ -115,6 +115,50 @@ All surveys require login. `Survey.AccessMode` only has one value:
 
 `SurveyDetailView.dispatch` unconditionally redirects unauthenticated users to `/accounts/login/?next=<path>`. There is no anonymous or quick-access mode. The user flow is: scan QR code → redirect to login if not authenticated → fill survey after login.
 
+### Survey Create Flow
+
+`SurveyCreateView` handles `/dashboard/forms/new/`. On valid POST:
+1. `slug` is auto-generated from `slugify(title)`. If collision exists, appends `-2`, `-3`, etc.
+2. `access_mode` is always forced to `Survey.AccessMode.LOGIN`.
+3. `improvement_tracking_enabled` is always forced to `True` (not user-editable).
+
+`SurveyCreateForm` fields: `title`, `category`, `description`, `thank_you_email_enabled`, `is_active`.
+
+After creation, redirects to `feedback:survey-builder` for the new survey's slug.
+
+### Survey Category
+
+`SurveyCategory` model (`feedback/models.py`) — optional classification for surveys.
+
+- `name`: unique CharField
+- `Survey.category`: nullable FK → `SurveyCategory` (`SET_NULL`)
+
+`SurveyManagerView` supports:
+- `?sort=newest` (default) / `?sort=oldest` / `?sort=title`
+- `?category=<id>` — filter by category
+
+Admin: `SurveyCategoryAdmin` registered; `improvement_tracking_enabled` is `readonly` in `SurveyAdmin`.
+
+### Survey Builder
+
+`SurveyBuilderView` (`/dashboard/forms/<slug>/builder/`) has three functional tabs:
+
+| Tab | key | Content |
+|---|---|---|
+| 題目設定 | `questions` | Two-column: question list (with inline edit) + add-question form |
+| 回覆概況 | `responses` | Response count, latest response time, links to stats/text-analysis |
+| 問卷設定 | `settings` | `SurveyEditForm`: title, category, description, is_active (toggle), thank_you_email_enabled (checkbox), slug (read-only + copy button) |
+
+Tab state is preserved via `?tab=<key>` query param on redirect after POST.
+
+POST actions (`action` hidden input):
+- `delete-question` — delete a question by `question_id`
+- `edit-question` — update a question via `QuestionCreateForm(instance=question)`
+- `update-survey` — update survey metadata via `SurveyEditForm(instance=survey)`
+- (default, no action) — add a new question
+
+`SurveyEditForm` fields: `title`, `category`, `description`, `is_active`, `thank_you_email_enabled`.
+
 ### Text Analysis
 
 Tokenizes submission text using regex supporting both Chinese characters and English words (2+ chars). Filters a hardcoded stop-word list. Returns top 20 keywords by frequency with `category` field (looked up from `KeywordCategory`). Found in `services/feedback_service/analysis.py` and mirrored in `feedback/local_service.py`.
@@ -151,7 +195,7 @@ Copy `.env.example` to `.env`. Key variables:
 
 ## Data Models
 
-**Django ORM** (source of truth): `Survey`, `Question`, `FeedbackSubmission`, `Answer`, `KeywordCategory`, `ImprovementUpdate`, `ImprovementDispatch` in `feedback/models.py`. `User` (extends `AbstractUser`) with `role` and `notification_opt_in` in `accounts/models.py`.
+**Django ORM** (source of truth): `SurveyCategory`, `Survey`, `Question`, `FeedbackSubmission`, `Answer`, `KeywordCategory`, `ImprovementUpdate`, `ImprovementDispatch` in `feedback/models.py`. `User` (extends `AbstractUser`) with `role` and `notification_opt_in` in `accounts/models.py`.
 
 **SQLAlchemy models** in `services/feedback_service/models.py` mirror the Django schema — they read/write the same tables. When adding fields, update both ORMs and create a Django migration.
 
@@ -176,6 +220,7 @@ Fetched in 2 queries (no N+1): one for all improvements, one for all surveys; gr
 | `feedback/0001` – `0004` | Initial schema |
 | `feedback/0005` | Remove QUICK/HYBRID choices from Survey.access_mode and FeedbackSubmission.source |
 | `feedback/0006` | Data migration: convert existing hybrid/quick records to login |
+| `feedback/0007` | Add SurveyCategory model; add Survey.category FK |
 
 ## Deployment
 
@@ -195,6 +240,7 @@ dj-database-url==3.0.1
 Flask==3.1.2
 gunicorn==23.0.0
 psycopg[binary]==3.3.3      # psycopg3, not psycopg2
+python-dotenv==1.0.1
 requests==2.32.5
 SQLAlchemy==2.0.43
 whitenoise==6.9.0
