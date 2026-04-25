@@ -62,14 +62,12 @@ class SurveyCreateForm(forms.ModelForm):
             "title",
             "description",
             "thank_you_email_enabled",
-            "improvement_tracking_enabled",
             "is_active",
         )
         labels = {
             "title": "問卷名稱",
             "description": "問卷說明",
             "thank_you_email_enabled": "完成後寄送確認信",
-            "improvement_tracking_enabled": "啟用改善追蹤",
             "is_active": "立即啟用問卷",
         }
         widgets = {

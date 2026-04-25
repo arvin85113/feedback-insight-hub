@@ -18,17 +18,43 @@
         </div>
         <form method="post" class="form-stack">
             {% csrf_token %}
-            {% for field in form %}
-                <div class="field-block">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% if field.help_text %}
-                        <p class="muted-text">{{ field.help_text }}</p>
-                    {% endif %}
-                    {{ field.errors }}
-                </div>
-            {% endfor %}
-            <button type="submit" class="button button-primary">建立問卷並前往題目編排</button>
+            <div class="field-block">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
+            <div class="field-block">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-block-header">發佈設定</div>
+                <label class="toggle-label">
+                    <div class="toggle-wrapper">
+                        {{ form.is_active }}
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </div>
+                    <div class="toggle-text">
+                        <span class="toggle-title">立即啟用問卷</span>
+                        <span class="toggle-desc">未開啟則儲存為草稿，可稍後從問卷管理頁啟用</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-block-header">通知設定</div>
+                <label class="checkbox-label-rich">
+                    {{ form.thank_you_email_enabled }}
+                    <div class="checkbox-text">
+                        <span class="checkbox-title">完成後寄送確認信</span>
+                        <span class="checkbox-desc">填答者提交後將收到一封回覆確認信</span>
+                    </div>
+                </label>
+            </div>
+
+            <button type="submit" class="button button-primary">建立並開始設計題目</button>
         </form>
     </article>
 
@@ -36,9 +62,13 @@
         <div class="panel-head">
             <h2>建議設定</h2>
         </div>
-        <ul class="feature-list compact-list">
-            <li>若希望顧客持續收到改善通知，請保留改善追蹤功能。</li>
-        </ul>
+        <div class="info-callout">
+            <span class="info-callout-icon">💡</span>
+            <div>
+                <div class="info-callout-title">智能分析已就緒</div>
+                <div class="info-callout-desc">本問卷將自動啟用數據追蹤，收集完成後即可直接進行趨勢分析與統計推論。</div>
+            </div>
+        </div>
     </article>
 </section>
 {% endblock %}

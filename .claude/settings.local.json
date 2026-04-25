@@ -4,7 +4,10 @@
       "Bash(claude mcp *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(.venv/Scripts/python.exe manage.py shell -c \"from feedback.models import Survey; qs = Survey.objects.filter\\(improvement_tracking_enabled=False\\); print\\(f'Count: {qs.count\\(\\)}'\\); [print\\(f'  id={s.id} slug={s.slug}'\\) for s in qs]\")",
+      "Bash(py --version)",
+      "Bash(python3 manage.py shell -c \"from feedback.models import Survey; qs = Survey.objects.filter\\(improvement_tracking_enabled=False\\); print\\(f'Count: {qs.count\\(\\)}'\\); [print\\(f'  id={s.id} slug={s.slug}'\\) for s in qs]\")"
     ]
   }
 }

@@ -21,6 +21,12 @@ class SurveyAdmin(admin.ModelAdmin):
     list_display = ("title", "slug", "access_mode", "is_active", "updated_at")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [QuestionInline]
+    readonly_fields = ("improvement_tracking_enabled",)
+    fields = (
+        "title", "slug", "description", "access_mode",
+        "thank_you_email_enabled", "is_active",
+        "improvement_tracking_enabled",
+    )
 
 
 @admin.register(FeedbackSubmission)

@@ -144,6 +144,7 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
             n += 1
         form.instance.slug = slug
         form.instance.access_mode = Survey.AccessMode.LOGIN
+        form.instance.improvement_tracking_enabled = True
         messages.success(self.request, "問卷已建立，接著可以進入題目編輯器完成配置。")
         return super().form_valid(form)
 
