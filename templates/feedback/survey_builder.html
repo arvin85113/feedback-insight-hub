@@ -29,80 +29,256 @@
 <section class="manager-panel">
     <div class="card-topline">
         <h2>編排工作區</h2>
-        <div class="card-topline">
+        <div class="tab-bar">
             {% for tab in builder_tabs %}
-                <span class="pill {% if tab.key == 'questions' %}pill-active{% endif %}">{{ tab.label }}</span>
+                <button class="tab-btn {% if tab.key == active_tab %}tab-btn-active{% endif %}"
+                        data-tab="{{ tab.key }}">{{ tab.label }}</button>
             {% endfor %}
         </div>
     </div>
-</section>
 
-<section class="manager-content-grid">
-    <article class="manager-panel">
-        <div class="panel-head">
-            <h2>目前題目</h2>
-        </div>
-        <div class="record-list">
-            {% for question in survey.questions.all %}
-                <div class="record-row record-row-stack">
-                    <div>
-                        <strong>{{ question.order }}. {{ question.title }}</strong>
-                        <p>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</p>
-                        {% if question.help_text %}
-                            <p>{{ question.help_text }}</p>
-                        {% endif %}
-                        {% if question.options %}
-                            <div class="option-pills">
-                                {% for option in question.options %}
-                                    <span class="pill">{{ option }}</span>
-                                {% endfor %}
+    {# ── Tab 1: 題目設定 ── #}
+    <div class="tab-panel" data-panel="questions" {% if active_tab != 'questions' %}style="display:none"{% endif %}>
+        <div class="builder-layout">
+            <div class="builder-questions">
+                <div class="panel-head">
+                    <h3>目前題目</h3>
+                </div>
+                <div class="record-list">
+                    {% for question in survey.questions.all %}
+                        <div class="record-row record-row-stack" id="question-row-{{ question.id }}">
+                            <div>
+                                <strong>{{ question.order }}. {{ question.title }}</strong>
+                                <p>{{ question.get_kind_display }} / {{ question.get_data_type_display }}</p>
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="record-meta">
-                        <span class="pill {% if question.is_required %}pill-active{% endif %}">
-                            {% if question.is_required %}必填{% else %}選填{% endif %}
-                        </span>
-                        {% if question.enable_keyword_tracking %}
-                            <span class="pill">文字分析</span>
-                        {% endif %}
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="delete-question">
-                            <input type="hidden" name="question_id" value="{{ question.id }}">
-                            <button type="submit" class="button button-ghost button-small">刪除</button>
-                        </form>
-                    </div>
+                            <div class="record-meta">
+                                <span class="pill {% if question.is_required %}pill-active{% endif %}">
+                                    {% if question.is_required %}必填{% else %}選填{% endif %}
+                                </span>
+                                {% if question.enable_keyword_tracking %}
+                                    <span class="pill">文字分析</span>
+                                {% endif %}
+                                <button type="button" class="button button-ghost button-small edit-question-btn"
+                                        data-question-id="{{ question.id }}">編輯</button>
+                                <form method="post" style="display:inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete-question">
+                                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                                    <button type="submit" class="button button-ghost button-small">刪除</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="inline-edit-panel" id="edit-panel-{{ question.id }}" style="display:none">
+                            <form method="post" class="form-stack inline-edit-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="edit-question">
+                                <input type="hidden" name="question_id" value="{{ question.id }}">
+                                <div class="field-block">
+                                    <label>題目名稱</label>
+                                    <input type="text" name="title" value="{{ question.title }}" required>
+                                </div>
+                                <div class="field-block">
+                                    <label>補充說明</label>
+                                    <input type="text" name="help_text" value="{{ question.help_text }}" placeholder="例如：請依照最近一次使用經驗作答">
+                                </div>
+                                <div class="field-block">
+                                    <label>作答形式</label>
+                                    <select name="kind">
+                                        {% for val, label in question.Kind.choices %}
+                                            <option value="{{ val }}" {% if question.kind == val %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="field-block">
+                                    <label>資料型態</label>
+                                    <select name="data_type">
+                                        {% for val, label in question.DataType.choices %}
+                                            <option value="{{ val }}" {% if question.data_type == val %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="field-block">
+                                    <label>選項內容</label>
+                                    <textarea name="options_text" rows="4" placeholder="每行一個選項">{{ question.options_text }}</textarea>
+                                </div>
+                                <div class="field-block">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="is_required" {% if question.is_required %}checked{% endif %}>
+                                        必填
+                                    </label>
+                                </div>
+                                <div class="field-block">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="enable_keyword_tracking" {% if question.enable_keyword_tracking %}checked{% endif %}>
+                                        納入文字關鍵字分析
+                                    </label>
+                                </div>
+                                <div class="field-block">
+                                    <label>排序</label>
+                                    <input type="number" name="order" value="{{ question.order }}" min="1">
+                                </div>
+                                <div class="inline-edit-actions">
+                                    <button type="submit" class="button button-primary button-small">儲存</button>
+                                    <button type="button" class="button button-ghost button-small cancel-edit-btn"
+                                            data-question-id="{{ question.id }}">取消</button>
+                                </div>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <div class="empty-card">
+                            <div>
+                                <h3>尚未加入題目</h3>
+                                <p>先建立第一題，之後再逐步補齊量表、選項題與文字題。</p>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% empty %}
-                <div class="empty-card">
-                    <div>
-                        <h3>尚未加入題目</h3>
-                        <p>先建立第一題，之後再逐步補齊量表、選項題與文字題。</p>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </article>
+            </div>
 
-    <article class="manager-panel">
-        <div class="panel-head">
-            <h2>新增題目</h2>
+            <div class="builder-add-question">
+                <div class="panel-head">
+                    <h3>新增題目</h3>
+                </div>
+                <form method="post" class="form-stack">
+                    {% csrf_token %}
+                    {% for field in question_form %}
+                        <div class="field-block">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="muted-text">{{ field.help_text }}</p>
+                            {% endif %}
+                            {{ field.errors }}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="button button-primary">加入題目</button>
+                </form>
+            </div>
         </div>
+    </div>
+
+    {# ── Tab 2: 回覆概況 ── #}
+    <div class="tab-panel" data-panel="responses" {% if active_tab != 'responses' %}style="display:none"{% endif %}>
+        <div class="responses-summary">
+            <div class="kpi-strip">
+                <article class="kpi-chip">
+                    <span>回覆總數</span>
+                    <strong>{{ responses_count }}</strong>
+                </article>
+                <article class="kpi-chip">
+                    <span>最近回覆</span>
+                    <strong>{% if latest_response %}{{ latest_response.submitted_at|date:"Y/m/d H:i" }}{% else %}尚無回覆{% endif %}</strong>
+                </article>
+            </div>
+            <div class="response-actions">
+                <a class="button button-secondary" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">前往統計分析</a>
+                <a class="button button-secondary" href="{% url 'feedback:text-analysis' %}?survey={{ survey.slug }}">前往文字洞察</a>
+            </div>
+        </div>
+    </div>
+
+    {# ── Tab 3: 問卷設定 ── #}
+    <div class="tab-panel" data-panel="settings" {% if active_tab != 'settings' %}style="display:none"{% endif %}>
         <form method="post" class="form-stack">
             {% csrf_token %}
-            {% for field in question_form %}
-                <div class="field-block">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% if field.help_text %}
-                        <p class="muted-text">{{ field.help_text }}</p>
-                    {% endif %}
-                    {{ field.errors }}
+            <input type="hidden" name="action" value="update-survey">
+            <div class="field-block">
+                {{ survey_edit_form.title.label_tag }}
+                {{ survey_edit_form.title }}
+                {{ survey_edit_form.title.errors }}
+            </div>
+            <div class="field-block">
+                {{ survey_edit_form.category.label_tag }}
+                {{ survey_edit_form.category }}
+                {{ survey_edit_form.category.errors }}
+            </div>
+            <div class="field-block">
+                {{ survey_edit_form.description.label_tag }}
+                {{ survey_edit_form.description }}
+                {{ survey_edit_form.description.errors }}
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-block-header">發佈設定</div>
+                <label class="toggle-label">
+                    <div class="toggle-wrapper">
+                        {{ survey_edit_form.is_active }}
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </div>
+                    <div class="toggle-text">
+                        <span class="toggle-title">立即啟用問卷</span>
+                        <span class="toggle-desc">未開啟則儲存為草稿，可稍後從問卷管理頁啟用</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-block-header">通知設定</div>
+                <label class="checkbox-label-rich">
+                    {{ survey_edit_form.thank_you_email_enabled }}
+                    <div class="checkbox-text">
+                        <span class="checkbox-title">完成後寄送確認信</span>
+                        <span class="checkbox-desc">填答者提交後將收到一封回覆確認信</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-block-header">問卷連結</div>
+                <div class="slug-row">
+                    <input type="text" class="slug-input" value="{{ request.scheme }}://{{ request.get_host }}{% url 'feedback:survey-detail' survey.slug %}" disabled>
+                    <button type="button" class="button button-ghost button-small" id="copy-slug-btn">複製連結</button>
                 </div>
-            {% endfor %}
-            <button type="submit" class="button button-primary">加入題目</button>
+            </div>
+
+            <button type="submit" class="button button-primary">儲存設定</button>
         </form>
-    </article>
+    </div>
 </section>
+
+<script>
+(function () {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('.tab-panel');
+
+    function activateTab(key) {
+        tabBtns.forEach(btn => btn.classList.toggle('tab-btn-active', btn.dataset.tab === key));
+        panels.forEach(panel => panel.style.display = panel.dataset.panel === key ? '' : 'none');
+    }
+
+    tabBtns.forEach(btn => btn.addEventListener('click', () => activateTab(btn.dataset.tab)));
+
+    // Inline edit toggle
+    let openPanel = null;
+    document.querySelectorAll('.edit-question-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.questionId;
+            const panel = document.getElementById('edit-panel-' + id);
+            if (openPanel && openPanel !== panel) openPanel.style.display = 'none';
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            openPanel = panel.style.display === 'block' ? panel : null;
+        });
+    });
+
+    document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const panel = document.getElementById('edit-panel-' + btn.dataset.questionId);
+            panel.style.display = 'none';
+            openPanel = null;
+        });
+    });
+
+    // Copy survey URL
+    const copyBtn = document.getElementById('copy-slug-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            const input = copyBtn.previousElementSibling;
+            navigator.clipboard.writeText(input.value).then(() => {
+                copyBtn.textContent = '已複製！';
+                setTimeout(() => copyBtn.textContent = '複製連結', 2000);
+            });
+        });
+    }
+})();
+</script>
 {% endblock %}

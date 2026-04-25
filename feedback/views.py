@@ -16,6 +16,7 @@ from .forms import (
     QuestionCreateForm,
     QuickAccessForm,
     SurveyCreateForm,
+    SurveyEditForm,
     SurveyFormBuilder,
 )
 from .models import ImprovementDispatch, ImprovementUpdate, Question, Survey, SurveyCategory
@@ -183,6 +184,9 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
             initial={"order": self.object.questions.count() + 1}
         )
         context["responses_count"] = self.object.submissions.count()
+        context["survey_edit_form"] = kwargs.get("survey_edit_form") or SurveyEditForm(instance=self.object)
+        context["latest_response"] = self.object.submissions.order_by("-submitted_at").first()
+        context["active_tab"] = self.request.GET.get("tab", "questions")
         context["builder_tabs"] = [
             {"key": "questions", "label": "題目設定"},
             {"key": "responses", "label": "回覆概況"},
@@ -199,6 +203,25 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
             question.delete()
             messages.success(request, "題目已從問卷中移除。")
             return redirect("feedback:survey-builder", slug=self.object.slug)
+
+        if action == "edit-question":
+            question = get_object_or_404(Question, id=request.POST.get("question_id"), survey=self.object)
+            question_form = QuestionCreateForm(request.POST, instance=question)
+            if question_form.is_valid():
+                question_form.save()
+                messages.success(request, "題目已更新。")
+                return redirect(reverse("feedback:survey-builder", args=[self.object.slug]) + "?tab=questions")
+            context = self.get_context_data(question_form=question_form, object=self.object)
+            return self.render_to_response(context)
+
+        if action == "update-survey":
+            survey_edit_form = SurveyEditForm(request.POST, instance=self.object)
+            if survey_edit_form.is_valid():
+                survey_edit_form.save()
+                messages.success(request, "問卷設定已儲存。")
+                return redirect(reverse("feedback:survey-builder", args=[self.object.slug]) + "?tab=settings")
+            context = self.get_context_data(survey_edit_form=survey_edit_form, object=self.object)
+            return self.render_to_response(context)
 
         question_form = QuestionCreateForm(request.POST)
         if question_form.is_valid():

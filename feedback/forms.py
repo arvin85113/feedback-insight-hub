@@ -117,3 +117,27 @@ class QuestionCreateForm(forms.ModelForm):
             ),
             "help_text": forms.TextInput(attrs={"placeholder": "例如：請依照最近一次使用經驗作答"}),
         }
+
+
+class SurveyEditForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=SurveyCategory.objects.all(),
+        required=False,
+        empty_label="── 選擇分類（選填）──",
+        label="問卷分類",
+        widget=forms.Select(),
+    )
+
+    class Meta:
+        model = Survey
+        fields = ("title", "category", "description", "is_active", "thank_you_email_enabled")
+        labels = {
+            "title": "問卷名稱",
+            "category": "問卷分類",
+            "description": "問卷說明",
+            "is_active": "立即啟用問卷",
+            "thank_you_email_enabled": "完成後寄送確認信",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
