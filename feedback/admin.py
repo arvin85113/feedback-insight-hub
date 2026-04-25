@@ -8,12 +8,18 @@ from .models import (
     KeywordCategory,
     Question,
     Survey,
+    SurveyCategory,
 )
 
 
 class QuestionInline(admin.TabularInline):
     model = Question
     extra = 1
+
+
+@admin.register(SurveyCategory)
+class SurveyCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "created_at")
 
 
 @admin.register(Survey)
@@ -24,6 +30,7 @@ class SurveyAdmin(admin.ModelAdmin):
     readonly_fields = ("improvement_tracking_enabled",)
     fields = (
         "title", "slug", "description", "access_mode",
+        "category",
         "thank_you_email_enabled", "is_active",
         "improvement_tracking_enabled",
     )

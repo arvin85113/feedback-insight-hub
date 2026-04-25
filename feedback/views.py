@@ -18,7 +18,7 @@ from .forms import (
     SurveyCreateForm,
     SurveyFormBuilder,
 )
-from .models import ImprovementDispatch, ImprovementUpdate, Question, Survey
+from .models import ImprovementDispatch, ImprovementUpdate, Question, Survey, SurveyCategory
 from .service_client import service_client
 
 
@@ -122,7 +122,23 @@ class SurveyManagerView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        context["surveys"] = Survey.objects.prefetch_related("questions").all()
+        sort = self.request.GET.get("sort", "newest")
+        category_id = self.request.GET.get("category", "")
+
+        qs = Survey.objects.prefetch_related("questions").select_related("category")
+        if category_id:
+            qs = qs.filter(category_id=category_id)
+        if sort == "oldest":
+            qs = qs.order_by("created_at")
+        elif sort == "title":
+            qs = qs.order_by("title")
+        else:
+            qs = qs.order_by("-created_at")
+
+        context["surveys"] = qs
+        context["categories"] = SurveyCategory.objects.all()
+        context["current_sort"] = sort
+        context["current_category"] = category_id
         return context
 
 

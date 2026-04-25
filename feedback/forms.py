@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ImprovementUpdate, Question, Survey
+from .models import ImprovementUpdate, Question, Survey, SurveyCategory
 
 
 class SurveyFormBuilder(forms.Form):
@@ -56,16 +56,26 @@ class ImprovementUpdateForm(forms.ModelForm):
 
 
 class SurveyCreateForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=SurveyCategory.objects.all(),
+        required=False,
+        empty_label="── 選擇分類（選填）──",
+        label="問卷分類",
+        widget=forms.Select(),
+    )
+
     class Meta:
         model = Survey
         fields = (
             "title",
+            "category",
             "description",
             "thank_you_email_enabled",
             "is_active",
         )
         labels = {
             "title": "問卷名稱",
+            "category": "問卷分類",
             "description": "問卷說明",
             "thank_you_email_enabled": "完成後寄送確認信",
             "is_active": "立即啟用問卷",

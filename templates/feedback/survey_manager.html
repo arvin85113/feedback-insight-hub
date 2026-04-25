@@ -12,12 +12,36 @@
     <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
 </section>
 
+<section class="manager-toolbar">
+    <div class="toolbar-filters">
+        <a class="filter-pill {% if not current_category %}filter-pill-active{% endif %}"
+           href="?sort={{ current_sort }}">全部</a>
+        {% for cat in categories %}
+            <a class="filter-pill {% if current_category == cat.id|stringformat:'s' %}filter-pill-active{% endif %}"
+               href="?sort={{ current_sort }}&category={{ cat.id }}">{{ cat.name }}</a>
+        {% endfor %}
+    </div>
+    <div class="toolbar-sort">
+        <select class="sort-select" onchange="location.href=this.value">
+            <option value="?sort=newest{% if current_category %}&category={{ current_category }}{% endif %}"
+                {% if current_sort == 'newest' %}selected{% endif %}>最新建立</option>
+            <option value="?sort=oldest{% if current_category %}&category={{ current_category }}{% endif %}"
+                {% if current_sort == 'oldest' %}selected{% endif %}>最舊建立</option>
+            <option value="?sort=title{% if current_category %}&category={{ current_category }}{% endif %}"
+                {% if current_sort == 'title' %}selected{% endif %}>名稱 A-Z</option>
+        </select>
+    </div>
+</section>
+
 <section class="manager-panel">
     <div class="record-list">
         {% for survey in surveys %}
             <a class="record-row record-row-stack" href="{% url 'feedback:survey-builder' survey.slug %}">
                 <div>
                     <strong>{{ survey.title }}</strong>
+                    {% if survey.category %}
+                        <span class="pill pill-category">{{ survey.category.name }}</span>
+                    {% endif %}
                     <p>{{ survey.description|default:"此問卷已建立，可進一步設定題目、流程與分享方式。" }}</p>
                     <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆 | {{ survey.get_access_mode_display }}</p>
                 </div>

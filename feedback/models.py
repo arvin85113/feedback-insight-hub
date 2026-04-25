@@ -9,6 +9,19 @@ from django.urls import reverse
 from django.utils import timezone
 
 
+class SurveyCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "問卷分類"
+        verbose_name_plural = "問卷分類"
+
+    def __str__(self):
+        return self.name
+
+
 class Survey(models.Model):
     class AccessMode(models.TextChoices):
         LOGIN = "login", "登入後填答"
@@ -16,6 +29,14 @@ class Survey(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
+    category = models.ForeignKey(
+        SurveyCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="surveys",
+        verbose_name="分類",
+    )
     access_mode = models.CharField(max_length=20, choices=AccessMode.choices, default=AccessMode.LOGIN)
     thank_you_email_enabled = models.BooleanField(default=True)
     improvement_tracking_enabled = models.BooleanField(default=True)
