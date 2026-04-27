@@ -1484,3 +1484,253 @@ input[type="checkbox"] {
     color: var(--muted);
     background: var(--surface-alt, #f6f8fa);
 }
+
+/* ── Google Form Style Question Builder ── */
+.google-form-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border-top: 4px solid var(--brand);
+    padding: 24px;
+}
+
+.form-row-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.title-group {
+    flex: 1;
+}
+
+.type-group {
+    flex-shrink: 0;
+    width: 160px;
+}
+
+.google-input-title {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    background: transparent;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 8px 0;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.google-input-title:focus {
+    border-bottom-color: var(--brand);
+}
+
+.google-input-title::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.google-select-type {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.88rem;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.google-input-help {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    font-size: 0.9rem;
+    color: var(--ink);
+    padding: 6px 0;
+    outline: none;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+}
+
+.google-input-help:focus {
+    border-bottom-color: var(--brand);
+}
+
+.google-input-help::placeholder {
+    color: var(--muted);
+}
+
+.google-textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.88rem;
+    padding: 10px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.dynamic-section {
+    margin-bottom: 16px;
+}
+
+.section-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.hint-text {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ── Secondary card (二次判斷) ── */
+.secondary-card {
+    background: var(--surface-alt, #f6f8fa);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border-left: 3px solid var(--brand);
+}
+
+.secondary-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 12px;
+}
+
+.data-type-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.data-type-btn {
+    text-align: left;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--ink);
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.data-type-btn:hover {
+    border-color: var(--brand);
+    background: var(--surface-alt, #f6f8fa);
+}
+
+.data-type-btn.selected {
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 8%, white);
+}
+
+.data-type-btn small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2px;
+}
+
+/* ── Keyword toggle row ── */
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+}
+
+.toggle-text {
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+
+.google-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.google-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.google-toggle .slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.google-toggle .slider:before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.google-toggle input:checked + .slider {
+    background: var(--brand);
+}
+
+.google-toggle input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* ── Card footer ── */
+.card-footer {
+    padding-top: 16px;
+    margin-top: 8px;
+}
+
+.divider-top {
+    border-top: 1px solid var(--border);
+}
+
+.google-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    transition: opacity 0.15s;
+}
+
+.google-btn-primary:hover {
+    opacity: 0.9;
+}
