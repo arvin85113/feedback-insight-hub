@@ -17,7 +17,8 @@
       "Bash(pip install *)",
       "Bash(python -c \"import segno; print\\('segno ok:', segno.__version__\\)\")",
       "Bash(python -m pip install segno==1.6.1 -q)",
-      "Bash(python manage.py check)"
+      "Bash(python manage.py check)",
+      "Bash(python scripts/seed_demo_data.py)"
     ]
   }
 }
