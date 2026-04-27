@@ -162,11 +162,9 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
         form.instance.slug = slug
         form.instance.access_mode = Survey.AccessMode.LOGIN
         form.instance.improvement_tracking_enabled = True
+        survey = form.save()
         messages.success(self.request, "問卷已建立，接著可以進入題目編輯器完成配置。")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse("feedback:survey-builder", args=[self.object.slug])
+        return HttpResponseRedirect(reverse("feedback:survey-builder", args=[survey.slug]))
 
 
 class SurveyBuilderView(DashboardBaseMixin, DetailView):
