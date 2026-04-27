@@ -1,3 +1,4 @@
+import uuid
 from collections import defaultdict
 
 from django.contrib import messages
@@ -155,6 +156,8 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
 
     def form_valid(self, form):
         base = slugify(form.instance.title)
+        if not base:
+            base = f"survey-{uuid.uuid4().hex[:8]}"
         slug, n = base, 2
         while Survey.objects.filter(slug=slug).exists():
             slug = f"{base}-{n}"
