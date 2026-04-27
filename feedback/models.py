@@ -23,9 +23,6 @@ class SurveyCategory(models.Model):
 
 
 class Survey(models.Model):
-    class AccessMode(models.TextChoices):
-        LOGIN = "login", "登入後填答"
-
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
@@ -37,7 +34,6 @@ class Survey(models.Model):
         related_name="surveys",
         verbose_name="分類",
     )
-    access_mode = models.CharField(max_length=20, choices=AccessMode.choices, default=AccessMode.LOGIN)
     thank_you_email_enabled = models.BooleanField(default=True)
     improvement_tracking_enabled = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
@@ -103,7 +99,6 @@ class FeedbackSubmission(models.Model):
     )
     respondent_name = models.CharField(max_length=120, blank=True)
     respondent_email = models.EmailField(blank=True)
-    source = models.CharField(max_length=20, choices=Survey.AccessMode.choices, default=Survey.AccessMode.LOGIN)
     consent_follow_up = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
 

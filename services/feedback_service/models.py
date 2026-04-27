@@ -27,7 +27,6 @@ class Survey(Base):
     title: Mapped[str] = mapped_column(String(255))
     slug: Mapped[str] = mapped_column(String(50), unique=True)
     description: Mapped[str] = mapped_column(Text)
-    access_mode: Mapped[str] = mapped_column(String(20))
     thank_you_email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     improvement_tracking_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -64,7 +63,6 @@ class FeedbackSubmission(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("accounts_user.id"), nullable=True)
     respondent_name: Mapped[str] = mapped_column(String(120))
     respondent_email: Mapped[str] = mapped_column(String(254))
-    source: Mapped[str] = mapped_column(String(20))
     consent_follow_up: Mapped[bool] = mapped_column(Boolean, default=False)
     submitted_at: Mapped[DateTime] = mapped_column(DateTime)
 

@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from .analysis import DATA_TYPE_LABELS, access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
+from .analysis import DATA_TYPE_LABELS, build_dashboard_insights, summarize_keywords, summarize_numeric
 from .db import session_scope
 from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, User
 
@@ -19,8 +19,6 @@ def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
         "title": survey.title,
         "slug": survey.slug,
         "description": survey.description,
-        "access_mode": survey.access_mode,
-        "access_mode_display": access_mode_label(survey.access_mode),
         "improvement_tracking_enabled": survey.improvement_tracking_enabled,
         "thank_you_email_enabled": survey.thank_you_email_enabled,
         "questions": {"count": len(survey.questions)},
@@ -386,7 +384,6 @@ def create_submission(slug: str):
             user_id=payload.get("user_id"),
             respondent_name=payload.get("respondent_name", ""),
             respondent_email=payload.get("respondent_email", ""),
-            source=payload.get("source", "login"),
             consent_follow_up=bool(payload.get("consent_follow_up", False)),
             submitted_at=datetime.now(),
         )

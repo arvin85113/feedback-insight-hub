@@ -87,7 +87,7 @@ class FeedbackServiceClient:
                 self._mark_failure()
         return local_service.get_text_analysis_payload(slug)
 
-    def submit_survey(self, survey, *, user, respondent_name, respondent_email, consent_follow_up, source, answers):
+    def submit_survey(self, survey, *, user, respondent_name, respondent_email, consent_follow_up, answers):
         if self._service_available():
             try:
                 payload = {
@@ -95,7 +95,6 @@ class FeedbackServiceClient:
                     "respondent_name": respondent_name,
                     "respondent_email": respondent_email,
                     "consent_follow_up": consent_follow_up,
-                    "source": source,
                     "answers": answers,
                 }
                 return self._post(f"/api/surveys/{survey.slug}/submissions", payload)
@@ -107,7 +106,6 @@ class FeedbackServiceClient:
             respondent_name=respondent_name,
             respondent_email=respondent_email,
             consent_follow_up=consent_follow_up,
-            source=source,
             answers=answers,
         )
 

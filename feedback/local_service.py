@@ -17,19 +17,12 @@ from .models import (
 )
 
 
-ACCESS_MODE_LABELS = {
-    Survey.AccessMode.LOGIN: "登入後填答",
-}
-
-
 def serialize_survey(survey, response_total=None):
     return {
         "id": survey.id,
         "title": survey.title,
         "slug": survey.slug,
         "description": survey.description,
-        "access_mode": survey.access_mode,
-        "access_mode_display": ACCESS_MODE_LABELS.get(survey.access_mode, survey.access_mode),
         "improvement_tracking_enabled": survey.improvement_tracking_enabled,
         "thank_you_email_enabled": survey.thank_you_email_enabled,
         "questions": {"count": survey.questions.count()},
@@ -443,14 +436,13 @@ def get_text_analysis_payload(slug):
     return {"keywords": keyword_summary(survey)}
 
 
-def submit_survey_payload(survey, *, user, respondent_name, respondent_email, consent_follow_up, source, answers):
+def submit_survey_payload(survey, *, user, respondent_name, respondent_email, consent_follow_up, answers):
     submission = FeedbackSubmission.objects.create(
         survey=survey,
         user=user,
         respondent_name=respondent_name,
         respondent_email=respondent_email,
         consent_follow_up=consent_follow_up,
-        source=source,
     )
     for question in survey.questions.all():
         key = f"question_{question.id}"

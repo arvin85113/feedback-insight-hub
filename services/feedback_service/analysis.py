@@ -2,11 +2,6 @@ from collections import Counter
 import re
 from statistics import mean
 
-
-ACCESS_MODE_LABELS = {
-    "login": "登入後填答",
-}
-
 DATA_TYPE_LABELS = {
     "nominal": "名目",
     "ordinal": "順序",
@@ -25,10 +20,6 @@ STOP_WORDS = {
     "問卷",
     "改善",
 }
-
-
-def access_mode_label(value: str) -> str:
-    return ACCESS_MODE_LABELS.get(value, value)
 
 
 def tokenize_feedback(text: str) -> list[str]:

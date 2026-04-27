@@ -12,7 +12,6 @@ class Command(BaseCommand):
             defaults={
                 "title": "產品體驗回饋調查",
                 "description": "蒐集使用體驗、滿意度與改進建議，供後續統計分析與產品優化。",
-                "access_mode": Survey.AccessMode.LOGIN,
             },
         )
         questions = [

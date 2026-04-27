@@ -163,7 +163,6 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
             slug = f"{base}-{n}"
             n += 1
         form.instance.slug = slug
-        form.instance.access_mode = Survey.AccessMode.LOGIN
         form.instance.improvement_tracking_enabled = True
         survey = form.save()
         messages.success(self.request, "問卷已建立，接著可以進入題目編輯器完成配置。")
@@ -359,7 +358,6 @@ class SurveyDetailView(DetailView):
                 respondent_name=respondent_form.cleaned_data["respondent_name"],
                 respondent_email=respondent_form.cleaned_data["respondent_email"],
                 consent_follow_up=consent_follow_up,
-                source=Survey.AccessMode.LOGIN,
                 answers={key: value for key, value in form.cleaned_data.items()},
             )
 
