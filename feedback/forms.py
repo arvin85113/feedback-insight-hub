@@ -37,7 +37,7 @@ class SurveyFormBuilder(forms.Form):
         return forms.CharField(**common)
 
 
-class QuickAccessForm(forms.Form):
+class RespondentMetaForm(forms.Form):
     respondent_name = forms.CharField(label="姓名", max_length=120, required=False)
     respondent_email = forms.EmailField(label="Email", required=False)
     consent_follow_up = forms.BooleanField(label="願意接收後續改善通知", required=False)

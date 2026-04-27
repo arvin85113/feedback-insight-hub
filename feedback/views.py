@@ -15,7 +15,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, TemplateVie
 from .forms import (
     ImprovementUpdateForm,
     QuestionCreateForm,
-    QuickAccessForm,
+    RespondentMetaForm,
     SurveyCreateForm,
     SurveyEditForm,
     SurveyFormBuilder,
@@ -338,16 +338,16 @@ class SurveyDetailView(DetailView):
                 "respondent_email": self.request.user.email,
                 "consent_follow_up": getattr(self.request.user, "notification_opt_in", False),
             }
-        context["quick_form"] = kwargs.get("quick_form") or QuickAccessForm(prefix="meta", initial=initial)
+        context["respondent_form"] = kwargs.get("respondent_form") or RespondentMetaForm(prefix="meta", initial=initial)
         context["form"] = kwargs.get("form") or SurveyFormBuilder(survey=self.object)
         return context
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        quick_form = QuickAccessForm(request.POST, prefix="meta")
+        respondent_form = RespondentMetaForm(request.POST, prefix="meta")
         form = SurveyFormBuilder(request.POST, survey=self.object)
-        if form.is_valid() and quick_form.is_valid():
-            consent_follow_up = quick_form.cleaned_data["consent_follow_up"]
+        if form.is_valid() and respondent_form.is_valid():
+            consent_follow_up = respondent_form.cleaned_data["consent_follow_up"]
             if request.user.is_authenticated and not request.user.is_manager:
                 request.user.notification_opt_in = consent_follow_up
                 request.user.save(update_fields=["notification_opt_in"])
@@ -355,8 +355,8 @@ class SurveyDetailView(DetailView):
             submission_result = service_client.submit_survey(
                 self.object,
                 user=request.user if request.user.is_authenticated else None,
-                respondent_name=quick_form.cleaned_data["respondent_name"],
-                respondent_email=quick_form.cleaned_data["respondent_email"],
+                respondent_name=respondent_form.cleaned_data["respondent_name"],
+                respondent_email=respondent_form.cleaned_data["respondent_email"],
                 consent_follow_up=consent_follow_up,
                 source=Survey.AccessMode.LOGIN,
                 answers={key: value for key, value in form.cleaned_data.items()},
@@ -372,7 +372,7 @@ class SurveyDetailView(DetailView):
                 )
             return HttpResponseRedirect(reverse("feedback:survey-success", args=[self.object.slug]))
 
-        context = self.get_context_data(object=self.object, form=form, quick_form=quick_form)
+        context = self.get_context_data(object=self.object, form=form, respondent_form=respondent_form)
         return self.render_to_response(context)
 
 
