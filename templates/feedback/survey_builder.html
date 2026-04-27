@@ -3,27 +3,12 @@
 {% block title %}{{ survey.title }} | 問卷編排{% endblock %}
 
 {% block dashboard_content %}
-<section class="manager-header">
+<section class="manager-header builder-header">
     <div>
         <p class="section-kicker">Survey Builder</p>
         <h1>{{ survey.title }}</h1>
         <p>{{ survey.description|default:"這份問卷尚未補充說明，可在建立後再逐步補齊題目結構與引導文字。" }}</p>
     </div>
-</section>
-
-<section class="kpi-strip">
-    <article class="kpi-chip">
-        <span>開放模式</span>
-        <strong>{{ survey.get_access_mode_display }}</strong>
-    </article>
-    <article class="kpi-chip">
-        <span>題目數量</span>
-        <strong>{{ survey.questions.count }}</strong>
-    </article>
-    <article class="kpi-chip">
-        <span>目前回覆數</span>
-        <strong>{{ responses_count }}</strong>
-    </article>
 </section>
 
 <section class="manager-panel">
