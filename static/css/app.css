@@ -1883,3 +1883,74 @@ input[type="checkbox"] {
     font-size: 0.83rem;
     margin: 0;
 }
+
+/* ── Builder header meta row ── */
+.builder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.builder-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-bottom: 2px;
+}
+
+.builder-response-info {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.builder-meta-link {
+    font-size: 0.8rem;
+    color: var(--brand);
+    text-decoration: none;
+}
+
+.builder-meta-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Builder tab bar ── */
+.builder-tab-bar {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.builder-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.builder-tab:hover {
+    color: var(--ink);
+}
+
+.builder-tab-active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+    font-weight: 600;
+}
+
+.question-card-preview {
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}

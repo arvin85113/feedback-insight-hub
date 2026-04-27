@@ -9,35 +9,17 @@
         <h1>{{ survey.title }}</h1>
         <p>{{ survey.description|default:"這份問卷尚未補充說明，可在建立後再逐步補齊題目結構與引導文字。" }}</p>
     </div>
+    <div class="builder-header-meta">
+        <span class="builder-response-info">{{ responses_count }} 份回覆・最近回覆：{% if latest_response %}{{ latest_response.submitted_at|date:"m/d H:i" }}{% else %}尚無{% endif %}</span>
+        <a class="builder-meta-link" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">統計分析</a>
+        <a class="builder-meta-link" href="{% url 'feedback:text-analysis' %}?survey={{ survey.slug }}">文字洞察</a>
+    </div>
 </section>
 
 <section class="manager-panel">
-    <div class="card-topline flex-between">
-        <h2>編排工作區</h2>
-        <div class="builder-panel-btns">
-            <button type="button" class="button button-ghost button-small" id="btn-responses">回覆概況</button>
-            <button type="button" class="button button-ghost button-small" id="btn-settings">問卷設定</button>
-        </div>
-    </div>
-
-    {# ── 回覆概況 panel ── #}
-    <div id="panel-responses" style="display:none">
-        <div class="responses-summary">
-            <div class="kpi-strip">
-                <article class="kpi-chip">
-                    <span>回覆總數</span>
-                    <strong>{{ responses_count }}</strong>
-                </article>
-                <article class="kpi-chip">
-                    <span>最近回覆</span>
-                    <strong>{% if latest_response %}{{ latest_response.submitted_at|date:"Y/m/d H:i" }}{% else %}尚無回覆{% endif %}</strong>
-                </article>
-            </div>
-            <div class="response-actions">
-                <a class="button button-secondary" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">前往統計分析</a>
-                <a class="button button-secondary" href="{% url 'feedback:text-analysis' %}?survey={{ survey.slug }}">前往文字洞察</a>
-            </div>
-        </div>
+    <div class="builder-tab-bar">
+        <button type="button" class="builder-tab builder-tab-active" data-builder-tab="questions">題目設定</button>
+        <button type="button" class="builder-tab" data-builder-tab="settings">問卷設定</button>
     </div>
 
     {# ── 問卷設定 panel ── #}
@@ -95,13 +77,18 @@
     </div>
 
     {# ── 主要題目區（垂直排列）── #}
-    <div class="builder-vertical">
+    <div class="builder-vertical" id="panel-questions">
         {% for question in survey.questions.all %}
             <div class="question-card" id="question-row-{{ question.id }}">
                 <div class="question-card-header">
                     <div class="question-card-info">
                         <span class="question-order-badge">{{ question.order }}</span>
                         <strong>{{ question.title }}</strong>
+                        {% if question.help_text %}
+                            <span class="question-card-preview">{{ question.help_text }}</span>
+                        {% elif question.options_text %}
+                            <span class="question-card-preview">{{ question.options_text|truncatechars:40 }}</span>
+                        {% endif %}
                         <span class="pill">{{ question.get_kind_display }} / {{ question.get_data_type_display }}</span>
                     </div>
                     <div class="question-card-actions">
@@ -283,24 +270,22 @@
 
 <script>
 (function () {
-    // ── 右上角面板切換 ──
-    const panelResponses = document.getElementById('panel-responses');
+    // ── Tab bar（題目設定 / 問卷設定）──
+    const builderTabs = document.querySelectorAll('.builder-tab');
+    const panelQuestions = document.getElementById('panel-questions');
     const panelSettings = document.getElementById('panel-settings');
 
-    function toggleSidePanel(panel) {
-        const isOpen = panel.style.display !== 'none';
-        panelResponses.style.display = 'none';
-        panelSettings.style.display = 'none';
-        if (!isOpen) panel.style.display = 'block';
+    function activateBuilderTab(key) {
+        builderTabs.forEach(btn => btn.classList.toggle('builder-tab-active', btn.dataset.builderTab === key));
+        panelQuestions.style.display = key === 'questions' ? '' : 'none';
+        panelSettings.style.display = key === 'settings' ? 'block' : 'none';
     }
 
-    document.getElementById('btn-responses').addEventListener('click', () => toggleSidePanel(panelResponses));
-    document.getElementById('btn-settings').addEventListener('click', () => toggleSidePanel(panelSettings));
+    builderTabs.forEach(btn => btn.addEventListener('click', () => activateBuilderTab(btn.dataset.builderTab)));
 
-    // POST 後 ?tab=settings 自動展開對應 panel
+    // POST 後 ?tab=settings 自動切換
     const urlTab = new URLSearchParams(location.search).get('tab');
-    if (urlTab === 'settings') panelSettings.style.display = 'block';
-    else if (urlTab === 'responses') panelResponses.style.display = 'block';
+    if (urlTab === 'settings') activateBuilderTab('settings');
 
     // ── 新增問題展開/收起 ──
     const btnAddQuestion = document.getElementById('btn-add-question');
