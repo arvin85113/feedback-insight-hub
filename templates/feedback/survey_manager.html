@@ -7,7 +7,7 @@
     <div>
         <p class="section-kicker">Survey Management</p>
         <h1>問卷管理</h1>
-        <p>集中查看所有問卷的題目數、回覆量、開放模式與啟用狀態，並快速進入問卷編輯與檢視頁。</p>
+        <p>集中查看所有問卷的題目數、回覆量、啟用狀態與分類，並快速進入問卷編輯與檢視頁。</p>
     </div>
     <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
 </section>
@@ -44,7 +44,7 @@
                             <span class="pill pill-category">{{ survey.category.name }}</span>
                         {% endif %}
                         <p>{{ survey.description|default:"此問卷已建立，可進一步設定題目、流程與分享方式。" }}</p>
-                        <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆 | {{ survey.get_access_mode_display }}</p>
+                        <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆</p>
                     </div>
                 </a>
                 <div class="record-meta">

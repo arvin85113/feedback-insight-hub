@@ -190,7 +190,7 @@ def get_dashboard_payload():
     action_items = [
         {
             "title": "建立新問卷",
-            "meta": "新增題組、設定填答模式與通知規則。",
+            "meta": "新增題組、整理題目流程與通知規則。",
             "url": "/dashboard/forms/new/",
             "url_label": "開始建立",
         },
