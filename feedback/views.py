@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.text import slugify
-from django.views.generic import CreateView, DetailView, TemplateView
+from django.views.generic import CreateView, DeleteView, DetailView, TemplateView
 
 from .forms import (
     ImprovementUpdateForm,
@@ -233,6 +233,20 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
 
         context = self.get_context_data(question_form=question_form, object=self.object)
         return self.render_to_response(context)
+
+
+class SurveyDeleteView(DashboardBaseMixin, DeleteView):
+    model = Survey
+    success_url = reverse_lazy("feedback:survey-manager")
+
+    def get_queryset(self):
+        return Survey.objects.all()
+
+    def form_valid(self, form):
+        survey_title = self.get_object().title
+        response = super().form_valid(form)
+        messages.success(self.request, f"問卷「{survey_title}」已刪除。")
+        return response
 
 
 class StatsOverviewView(DashboardBaseMixin, TemplateView):

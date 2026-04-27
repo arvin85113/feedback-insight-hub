@@ -36,21 +36,28 @@
 <section class="manager-panel">
     <div class="record-list">
         {% for survey in surveys %}
-            <a class="record-row record-row-stack" href="{% url 'feedback:survey-builder' survey.slug %}">
-                <div>
-                    <strong>{{ survey.title }}</strong>
-                    {% if survey.category %}
-                        <span class="pill pill-category">{{ survey.category.name }}</span>
-                    {% endif %}
-                    <p>{{ survey.description|default:"此問卷已建立，可進一步設定題目、流程與分享方式。" }}</p>
-                    <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆 | {{ survey.get_access_mode_display }}</p>
-                </div>
+            <div class="record-row record-row-stack">
+                <a class="record-row-link" href="{% url 'feedback:survey-builder' survey.slug %}">
+                    <div>
+                        <strong>{{ survey.title }}</strong>
+                        {% if survey.category %}
+                            <span class="pill pill-category">{{ survey.category.name }}</span>
+                        {% endif %}
+                        <p>{{ survey.description|default:"此問卷已建立，可進一步設定題目、流程與分享方式。" }}</p>
+                        <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆 | {{ survey.get_access_mode_display }}</p>
+                    </div>
+                </a>
                 <div class="record-meta">
                     <span class="pill {% if survey.is_active %}pill-active{% endif %}">
                         {% if survey.is_active %}已啟用{% else %}草稿中{% endif %}
                     </span>
+                    <form method="post" action="{% url 'feedback:survey-delete' survey.slug %}"
+                          onsubmit="return confirm('確定要刪除「{{ survey.title }}」？此操作無法復原。')">
+                        {% csrf_token %}
+                        <button type="submit" class="button button-danger button-small">刪除</button>
+                    </form>
                 </div>
-            </a>
+            </div>
         {% empty %}
             <div class="empty-card">
                 <div>
