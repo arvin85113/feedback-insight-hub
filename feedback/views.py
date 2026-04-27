@@ -260,9 +260,10 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        payload = service_client.get_stats(selected_slug) if selected_slug else {"charts": [], "question_analysis": []}
-        context["charts"] = payload["charts"]
-        context["question_analysis"] = payload["question_analysis"]
+        payload = service_client.get_stats(selected_slug) if selected_slug else {"charts": [], "question_analysis": [], "inferential_analysis": []}
+        context["charts"] = payload.get("charts", [])
+        context["question_analysis"] = payload.get("question_analysis", [])
+        context["inferential_analysis"] = payload.get("inferential_analysis", [])
         return context
 
 

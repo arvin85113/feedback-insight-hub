@@ -253,12 +253,177 @@ def get_dashboard_payload():
     }
 
 
+def _round_or_none(value, digits=2):
+    if value != value:
+        return None
+    return round(float(value), digits)
+
+
+def get_survey_pandas_stats(survey):
+    try:
+        import pandas as pd
+        from scipy import stats
+    except ImportError as exc:
+        return {
+            "charts": [],
+            "inferential_analysis": [
+                {
+                    "skipped_reason": f"統計套件尚未安裝：{exc.name}",
+                }
+            ],
+        }
+
+    questions = list(survey.questions.order_by("order", "id"))
+    answer_rows = list(Answer.objects.filter(question__survey=survey).values("submission_id", "question_id", "value"))
+    if not questions or not answer_rows:
+        return {"charts": [], "inferential_analysis": []}
+
+    records = {}
+    for row in answer_rows:
+        records.setdefault(row["submission_id"], {})[f"Q_{row['question_id']}"] = row["value"]
+    df = pd.DataFrame(list(records.values()))
+    question_by_col = {f"Q_{question.id}": question for question in questions}
+
+    charts = []
+    numeric_columns = {}
+    categorical_columns = {}
+
+    for question in questions:
+        col = f"Q_{question.id}"
+        if col not in df.columns:
+            continue
+
+        series = df[col].dropna()
+        if series.empty:
+            continue
+
+        if question.data_type in {Question.DataType.CONTINUOUS, Question.DataType.DISCRETE}:
+            numeric_series = pd.to_numeric(series, errors="coerce").dropna()
+            if numeric_series.empty:
+                continue
+            numeric_columns[col] = pd.to_numeric(df[col], errors="coerce")
+            charts.append(
+                {
+                    "question": question,
+                    "type": "numeric",
+                    "count": int(numeric_series.count()),
+                    "avg": _round_or_none(numeric_series.mean()),
+                    "min": _round_or_none(numeric_series.min()),
+                    "max": _round_or_none(numeric_series.max()),
+                    "std": _round_or_none(numeric_series.std()) if numeric_series.count() > 1 else 0,
+                }
+            )
+        elif question.data_type in {Question.DataType.NOMINAL, Question.DataType.ORDINAL}:
+            text_series = series.astype(str).str.strip()
+            if question.kind == Question.Kind.MULTIPLE_CHOICE or text_series.str.contains(",").any():
+                frequency_series = text_series.str.split(",").explode().str.strip()
+                frequency_series = frequency_series[frequency_series != ""]
+            else:
+                frequency_series = text_series[text_series != ""]
+
+            if frequency_series.empty:
+                continue
+
+            if question.data_type == Question.DataType.NOMINAL and question.kind != Question.Kind.MULTIPLE_CHOICE:
+                categorical_columns[col] = df[col].astype(str).str.strip()
+
+            counts = frequency_series.value_counts()
+            charts.append(
+                {
+                    "question": question,
+                    "type": "category",
+                    "counts": [{"value": str(value), "total": int(total)} for value, total in counts.items()],
+                }
+            )
+
+    inferential_analysis = []
+    continuous_cols = [
+        f"Q_{question.id}"
+        for question in questions
+        if question.data_type == Question.DataType.CONTINUOUS and f"Q_{question.id}" in numeric_columns
+    ]
+    nominal_cols = [
+        f"Q_{question.id}"
+        for question in questions
+        if question.data_type == Question.DataType.NOMINAL
+        and question.kind != Question.Kind.MULTIPLE_CHOICE
+        and f"Q_{question.id}" in categorical_columns
+    ]
+
+    for iv_col in nominal_cols:
+        iv_series = categorical_columns[iv_col].replace("", pd.NA)
+        for dv_col in continuous_cols:
+            working = pd.DataFrame({"iv": iv_series, "dv": numeric_columns[dv_col]}).dropna()
+            base_result = {
+                "iv_title": question_by_col[iv_col].title,
+                "dv_title": question_by_col[dv_col].title,
+            }
+            group_counts = working["iv"].value_counts()
+            valid_groups = group_counts[group_counts >= 2].index.tolist()
+
+            if len(valid_groups) < 2:
+                base_result["skipped_reason"] = "有效分組不足 2 組"
+                inferential_analysis.append(base_result)
+                continue
+            if len(valid_groups) > 5:
+                base_result["skipped_reason"] = "組別超過 5 組，統計雜訊過高"
+                inferential_analysis.append(base_result)
+                continue
+
+            groups_data = [working.loc[working["iv"] == group, "dv"].dropna().to_numpy() for group in valid_groups]
+            if not all(len(values) >= 2 for values in groups_data):
+                base_result["skipped_reason"] = "部分組別內部的有效數值樣本不足"
+                inferential_analysis.append(base_result)
+                continue
+
+            try:
+                if len(valid_groups) == 2:
+                    stat_value, p_value = stats.ttest_ind(groups_data[0], groups_data[1], equal_var=False)
+                    test_name = "獨立樣本 t 檢定"
+                else:
+                    stat_value, p_value = stats.f_oneway(*groups_data)
+                    test_name = "單因子變異數分析 (ANOVA)"
+
+                if p_value != p_value:
+                    base_result["skipped_reason"] = "統計結果無法產生有效 p-value"
+                else:
+                    is_significant = bool(p_value < 0.05)
+                    base_result.update(
+                        {
+                            "test_name": test_name,
+                            "statistic": _round_or_none(stat_value, 4),
+                            "p_value": _round_or_none(p_value, 4),
+                            "is_significant": is_significant,
+                            "groups": [
+                                {
+                                    "value": str(group),
+                                    "count": int(len(values)),
+                                    "avg": _round_or_none(pd.Series(values).mean()),
+                                }
+                                for group, values in zip(valid_groups, groups_data)
+                            ],
+                            "insight": (
+                                f"「{question_by_col[iv_col].title}」的不同群體，"
+                                f"在「{question_by_col[dv_col].title}」上"
+                                f"{'有顯著' if is_significant else '沒有顯著'}差異。"
+                            ),
+                        }
+                    )
+                inferential_analysis.append(base_result)
+            except Exception as exc:
+                base_result["skipped_reason"] = f"運算錯誤：{exc}"
+                inferential_analysis.append(base_result)
+
+    return {"charts": charts, "inferential_analysis": inferential_analysis}
+
+
 def get_stats_payload(slug):
     survey = Survey.objects.filter(slug=slug).first() if slug else None
     if not survey:
-        return {"charts": [], "question_analysis": []}
+        return {"charts": [], "question_analysis": [], "inferential_analysis": []}
+    pandas_stats = get_survey_pandas_stats(survey)
     return {
-        "charts": chart_summary(survey),
+        "charts": pandas_stats["charts"] or chart_summary(survey),
         "question_analysis": [
             {
                 "title": question.title,
@@ -267,6 +432,7 @@ def get_stats_payload(slug):
             }
             for question in survey.questions.all()
         ],
+        "inferential_analysis": pandas_stats["inferential_analysis"],
     }
 
 

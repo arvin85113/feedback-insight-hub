@@ -36,6 +36,10 @@
             <span>可用圖表摘要</span>
             <strong>{{ charts|length }}</strong>
         </article>
+        <article class="kpi-chip">
+            <span>推論檢定</span>
+            <strong>{{ inferential_analysis|length }}</strong>
+        </article>
     </section>
 
     <section class="manager-content-grid analytics-grid">
@@ -92,6 +96,41 @@
                         <div>
                             <h3>尚未產生分布資料</h3>
                             <p>當問卷收到回覆後，這裡會顯示數值與選項分布。</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="manager-panel">
+            <div class="panel-head">
+                <h2>推論統計</h2>
+            </div>
+            <div class="record-list">
+                {% for result in inferential_analysis %}
+                    <div class="record-row record-row-stack">
+                        <div>
+                            <strong>{{ result.iv_title }} × {{ result.dv_title }}</strong>
+                            {% if result.skipped_reason %}
+                                <p>{{ result.skipped_reason }}</p>
+                            {% else %}
+                                <p>{{ result.test_name }}，p-value：{{ result.p_value }}</p>
+                                <p>{{ result.insight }}</p>
+                                {% if result.groups %}
+                                    <ul class="feature-list compact-list">
+                                        {% for group in result.groups %}
+                                            <li>{{ group.value }}：{{ group.count }} 筆，平均 {{ group.avg }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-card">
+                        <div>
+                            <h3>尚未產生推論檢定</h3>
+                            <p>需要至少一題名目分組題與一題連續數值題，且各組樣本數足夠。</p>
                         </div>
                     </div>
                 {% endfor %}
