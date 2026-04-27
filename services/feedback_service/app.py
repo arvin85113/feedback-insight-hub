@@ -335,9 +335,13 @@ def stats():
                 )
 
             if question.data_type == "continuous":
-                analysis = "適合進一步做平均數比較、趨勢檢視，或延伸到 t 檢定與 ANOVA。"
-            elif question.data_type in {"nominal", "ordinal"}:
-                analysis = "適合以比例分布、交叉分析與卡方檢定檢查不同群體間差異。"
+                analysis = "適合做平均數、標準差與趨勢檢視；若搭配名目分組題，可延伸到 t 檢定與 ANOVA。"
+            elif question.data_type == "discrete":
+                analysis = "適合做計數型數值摘要，例如總數、平均次數與分布；第一版不自動進入 t 檢定或 ANOVA。"
+            elif question.data_type == "nominal":
+                analysis = "適合做比例分布與交叉分析；單選名目題可作為推論統計的分組變數。"
+            elif question.data_type == "ordinal":
+                analysis = "適合做次數、比例與排序分布；因間距不一定相等，第一版不進入 t 檢定或 ANOVA。"
             else:
                 analysis = "適合做文字主題、情緒與關鍵字分析，萃取顧客原聲。"
 

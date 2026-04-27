@@ -1781,7 +1781,23 @@ input[type="checkbox"] {
     min-width: 0;
 }
 
-.question-card-info strong {
+.question-card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.question-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.question-card-title-row strong {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1806,6 +1822,84 @@ input[type="checkbox"] {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+}
+
+.question-response-preview {
+    padding: 2px 70px 18px;
+}
+
+.question-preview-help {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.question-preview-input,
+.question-preview-textarea {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    max-width: 560px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.question-preview-textarea {
+    min-height: 76px;
+    align-items: flex-start;
+    padding-top: 12px;
+}
+
+.question-preview-options {
+    display: grid;
+    gap: 14px;
+}
+
+.question-preview-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+    font-size: 0.92rem;
+}
+
+.preview-radio,
+.preview-box,
+.question-preview-scale-item i {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid color-mix(in srgb, var(--muted) 55%, transparent);
+    flex-shrink: 0;
+}
+
+.preview-radio,
+.question-preview-scale-item i {
+    border-radius: 50%;
+}
+
+.preview-box {
+    border-radius: 5px;
+}
+
+.question-preview-scale {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    max-width: 560px;
+    padding-top: 4px;
+}
+
+.question-preview-scale-item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    min-width: 38px;
+    color: var(--ink);
+    font-size: 0.86rem;
 }
 
 /* ── Option input list ── */
@@ -1947,12 +2041,33 @@ input[type="checkbox"] {
 }
 
 .question-card-preview {
+    display: block;
     font-size: 0.78rem;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
+    max-width: 520px;
+}
+
+.question-order-label {
+    align-self: center;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--surface-soft);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.kind-usage-hint {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+    max-width: 360px;
 }
 
 /* ── Danger button ── */

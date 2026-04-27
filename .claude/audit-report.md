@@ -27,16 +27,34 @@
 
 ### Pandas 統計規格
 
+本專案採用「分析用途導向資料型態」：不是純 Stevens 四尺度，也不是純資料科學的 categorical/numeric 二分法。目標是在題目建立階段收集足夠資訊，讓 Pandas 自動分析可以安全決定哪些資料能做描述統計、哪些能進推論統計。
+
 | data_type / kind | 敘述統計 | 推論統計 |
 |---|---|---|
-| `continuous` | numeric chart：count / avg / min / max / std | 可作為 DV |
-| `discrete` | numeric chart | 不作為 DV |
-| `nominal` single choice | category chart | 可作為 IV |
-| `nominal` multiple choice | split/explode frequency | 不作為 IV |
-| `ordinal` | category chart | 第一版不進 t-test / ANOVA |
+| `continuous` | 有實際數量意義的數值：評分、金額、時間、比例；numeric chart：count / avg / min / max / std | 可作為 DV |
+| `discrete` | 計數型或編碼型數值：拜訪次數、件數、等級編號；numeric chart | 不作為 DV |
+| `nominal` single choice | 無順序分類：部門、地區、角色、問題類型；category chart | 可作為 IV |
+| `nominal` multiple choice | 多重回應；split/explode frequency | 不作為 IV |
+| `ordinal` | 有順序但間距不保證相等：非常滿意 / 滿意 / 普通 / 不滿意；category chart | 第一版不進 t-test / ANOVA |
 | `text` | 交給 text-analysis | 不參與 |
 
 推論規則：nominal IV x continuous DV；2 組跑 Welch t-test，3-5 組跑 one-way ANOVA，每組至少 2 筆有效數值，不符合條件回傳 `skipped_reason`。
+
+Builder UI 規則：
+- `short_text` / `long_text` 固定為 `text`
+- `single_choice` 由使用者選 `ordinal` 或 `nominal`
+- `multiple_choice` 固定為 `nominal`
+- `scale` 由使用者選 `continuous` 或 `ordinal`
+- `integer` / `decimal` 由使用者選 `continuous` 或 `discrete`，目前 UI 預設 `continuous`
+
+### 2026-04-28 Builder UI 最新狀態
+
+- 題目卡片已加入表單式填答預覽，不再只是文字摘要。
+- `scale` 題會顯示 radio-style 量表點；若有 `options_text` 就使用前 7 個選項，否則預設顯示 1-5。
+- `single_choice` / `multiple_choice` 題會顯示前 5 個選項，並分別用 radio / checkbox 視覺。
+- `short_text` / `long_text` / `integer` / `decimal` 題會顯示不可互動的輸入框或文字框預覽。
+- 新增題目表單已顯示下一題題號，並在選擇題型時顯示輕量用途提示。
+- Manager dashboard 的全域 Django messages 黃色橫幅已從 `dashboard_base.html` 移除；非後台頁面的 `base.html` messages block 保留。
 
 ### 重要協作提醒
 

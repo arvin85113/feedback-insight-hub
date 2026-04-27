@@ -227,9 +227,13 @@ def chart_summary(survey):
 
 def recommend_analysis(question):
     if question.data_type == Question.DataType.CONTINUOUS:
-        return "適合進一步做平均數比較、趨勢檢視，或延伸到 t 檢定與 ANOVA。"
-    if question.data_type in {Question.DataType.NOMINAL, Question.DataType.ORDINAL}:
-        return "適合以比例分布、交叉分析與卡方檢定檢查不同群體間差異。"
+        return "適合做平均數、標準差與趨勢檢視；若搭配名目分組題，可延伸到 t 檢定與 ANOVA。"
+    if question.data_type == Question.DataType.DISCRETE:
+        return "適合做計數型數值摘要，例如總數、平均次數與分布；第一版不自動進入 t 檢定或 ANOVA。"
+    if question.data_type == Question.DataType.NOMINAL:
+        return "適合做比例分布與交叉分析；單選名目題可作為推論統計的分組變數。"
+    if question.data_type == Question.DataType.ORDINAL:
+        return "適合做次數、比例與排序分布；因間距不一定相等，第一版不進入 t 檢定或 ANOVA。"
     if question.data_type == Question.DataType.TEXT:
         return "適合做關鍵字、情緒傾向與主題聚類，提取具體改善線索。"
     return "建議先確認資料尺度，再選擇描述統計或推論統計方法。"

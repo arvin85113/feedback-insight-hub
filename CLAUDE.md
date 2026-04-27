@@ -177,16 +177,18 @@ Tokenizes submission text using regex supporting both Chinese characters and Eng
 
 `feedback/local_service.py` contains the current Pandas/SciPy statistical engine used by the Django fallback stats path.
 
+The project uses an **analysis-purpose data type model**, not a pure Stevens four-scale model and not a pure data-science-only categorical/numeric split. The goal is to let the builder capture the minimum information needed for safe automated Pandas analysis.
+
 `get_survey_pandas_stats(survey)` returns:
 - `charts`: template-compatible chart records (`type="numeric"` or `type="category"`).
 - `inferential_analysis`: automatic t-test / ANOVA records for valid nominal IV x continuous DV pairs.
 
 Rules:
-- `continuous`: numeric chart and dependent variable (DV) candidate.
-- `discrete`: numeric chart only.
-- `nominal`: category chart; single-choice nominal questions can be independent variables (IV).
-- `multiple_choice + nominal`: split/explode frequency chart only, not IV.
-- `ordinal`: category chart only; intentionally excluded from t-test / ANOVA.
+- `continuous`: numeric quantity with meaningful magnitude, such as score, money, time, or ratio. It gets numeric summaries and can be a dependent variable (DV) in t-test / ANOVA.
+- `discrete`: count-like or code-like numeric value, such as visit count, item count, or numeric level code. It gets numeric summaries only and is not automatically used as a DV.
+- `nominal`: unordered category, such as department, region, role, or issue type. It gets category distribution; single-choice nominal questions can be independent variables (IV).
+- `multiple_choice + nominal`: split/explode frequency chart only, not IV, because one submission may belong to multiple groups.
+- `ordinal`: ordered category where spacing is not guaranteed, such as very satisfied / satisfied / neutral / dissatisfied. It gets category distribution only and is intentionally excluded from t-test / ANOVA.
 - `text`: handled by text analysis, not the stats inference engine.
 
 Inference rules:
@@ -196,6 +198,21 @@ Inference rules:
 - Invalid combinations return `skipped_reason`.
 
 Important: this engine is currently wired through Django fallback (`feedback/local_service.py`). Flask `/api/stats` has not yet been upgraded to this Pandas contract.
+
+Builder UI rules:
+- `short_text` / `long_text` -> fixed `text`.
+- `single_choice` -> user chooses `ordinal` or `nominal`.
+- `multiple_choice` -> fixed `nominal`.
+- `scale` -> user chooses `continuous` or `ordinal`.
+- `integer` / `decimal` -> user chooses `continuous` or `discrete`; current UI defaults to `continuous`.
+
+Survey builder UI current state:
+- Question cards now include a lightweight answer preview below the title row.
+- `scale` preview renders radio-style points, using `question.options` when present and defaulting to 1-5 when empty.
+- `single_choice` / `multiple_choice` previews render radio/checkbox option rows, capped to the first 5 options.
+- Text and numeric questions render disabled-looking input/textarea previews.
+- The builder add-question form shows the next question number and a lightweight usage hint when the question kind changes.
+- Manager dashboard pages no longer render the global Django messages banner from `dashboard_base.html`; the frontend `base.html` messages block remains available for non-dashboard pages.
 
 ### Improvement List Page
 
