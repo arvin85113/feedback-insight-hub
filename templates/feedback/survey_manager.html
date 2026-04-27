@@ -9,8 +9,36 @@
         <h1>問卷管理</h1>
         <p>集中查看所有問卷的題目數、回覆量、啟用狀態與分類，並快速進入問卷編輯與檢視頁。</p>
     </div>
-    <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <button type="button" class="button button-ghost" id="category-panel-toggle">管理分類</button>
+        <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
+    </div>
 </section>
+
+<div class="category-panel" id="category-panel" hidden>
+    <div class="category-panel-inner">
+        <h3>問卷分類管理</h3>
+        <ul class="category-item-list">
+            {% for cat in categories %}
+            <li class="category-item">
+                <span>{{ cat.name }}</span>
+                <form method="post" action="{% url 'feedback:category-delete' cat.pk %}"
+                      onsubmit="return confirm('確定刪除分類「{{ cat.name }}」？已套用此分類的問卷將會移除分類。')">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-danger button-small">刪除</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="category-item-empty">目前沒有任何分類</li>
+            {% endfor %}
+        </ul>
+        <form method="post" action="{% url 'feedback:category-create' %}" class="category-add-form">
+            {% csrf_token %}
+            <input type="text" name="name" placeholder="新分類名稱" required>
+            <button type="submit" class="button button-primary button-small">新增</button>
+        </form>
+    </div>
+</div>
 
 <section class="manager-toolbar">
     <div class="toolbar-filters">
@@ -117,5 +145,20 @@ document.addEventListener('click', function() {
         w.classList.remove('open');
     });
 });
+
+var panelToggle = document.getElementById('category-panel-toggle');
+var categoryPanel = document.getElementById('category-panel');
+if (panelToggle && categoryPanel) {
+    panelToggle.addEventListener('click', function() {
+        var hidden = categoryPanel.hasAttribute('hidden');
+        if (hidden) {
+            categoryPanel.removeAttribute('hidden');
+            panelToggle.textContent = '收起分類';
+        } else {
+            categoryPanel.setAttribute('hidden', '');
+            panelToggle.textContent = '管理分類';
+        }
+    });
+}
 </script>
 {% endblock %}

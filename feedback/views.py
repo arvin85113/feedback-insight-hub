@@ -22,7 +22,7 @@ from .forms import (
     SurveyEditForm,
     SurveyFormBuilder,
 )
-from .models import ImprovementDispatch, ImprovementUpdate, Question, Survey, SurveyCategory
+from .models import ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, SurveyCategory
 from .service_client import service_client
 
 
@@ -144,6 +144,29 @@ class SurveyManagerView(DashboardBaseMixin, TemplateView):
         context["current_sort"] = sort
         context["current_category"] = category_id
         return context
+
+
+class SurveyCategoryCreateView(ManagerRequiredMixin, View):
+    def post(self, request):
+        name = request.POST.get("name", "").strip()
+        if not name:
+            messages.error(request, "分類名稱不能空白。")
+            return redirect("feedback:survey-manager")
+        if SurveyCategory.objects.filter(name=name).exists():
+            messages.error(request, f"分類「{name}」已存在。")
+            return redirect("feedback:survey-manager")
+        SurveyCategory.objects.create(name=name)
+        messages.success(request, f"分類「{name}」已建立。")
+        return redirect("feedback:survey-manager")
+
+
+class SurveyCategoryDeleteView(ManagerRequiredMixin, View):
+    def post(self, request, pk):
+        category = get_object_or_404(SurveyCategory, pk=pk)
+        name = category.name
+        category.delete()
+        messages.success(request, f"分類「{name}」已刪除。")
+        return redirect("feedback:survey-manager")
 
 
 class SurveyCreateView(DashboardBaseMixin, CreateView):
@@ -279,6 +302,40 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         return context
 
 
+class KeywordCategoryCreateView(ManagerRequiredMixin, View):
+    def post(self, request):
+        slug = request.POST.get("survey_slug", "").strip()
+        keyword = request.POST.get("keyword", "").strip()
+        category = request.POST.get("category", "").strip()
+        threshold = request.POST.get("threshold", "2").strip()
+        survey = get_object_or_404(Survey, slug=slug)
+        if not keyword or not category:
+            messages.error(request, "關鍵字與分類名稱不能空白。")
+            return redirect(f"{reverse('feedback:text-analysis')}?survey={slug}")
+        try:
+            threshold = int(threshold)
+            if threshold < 1:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "門檻值須為正整數。")
+            return redirect(f"{reverse('feedback:text-analysis')}?survey={slug}")
+        if KeywordCategory.objects.filter(survey=survey, keyword=keyword).exists():
+            messages.error(request, f"關鍵字「{keyword}」已有分類規則。")
+            return redirect(f"{reverse('feedback:text-analysis')}?survey={slug}")
+        KeywordCategory.objects.create(survey=survey, keyword=keyword, category=category, threshold=threshold)
+        messages.success(request, f"關鍵字規則「{keyword}」已建立。")
+        return redirect(f"{reverse('feedback:text-analysis')}?survey={slug}")
+
+
+class KeywordCategoryDeleteView(ManagerRequiredMixin, View):
+    def post(self, request, pk):
+        kc = get_object_or_404(KeywordCategory, pk=pk)
+        slug = kc.survey.slug
+        kc.delete()
+        messages.success(request, "關鍵字規則已刪除。")
+        return redirect(f"{reverse('feedback:text-analysis')}?survey={slug}")
+
+
 class TextAnalysisView(DashboardBaseMixin, TemplateView):
     template_name = "feedback/text_analysis.html"
     active_section = "feedback:text-analysis"
@@ -291,6 +348,10 @@ class TextAnalysisView(DashboardBaseMixin, TemplateView):
         context["selected_survey"] = survey
         context["keywords"] = service_client.get_text_analysis(selected_slug)["keywords"] if selected_slug else []
         context["text_questions"] = survey.questions.filter(data_type=Question.DataType.TEXT) if survey else []
+        context["keyword_categories"] = (
+            KeywordCategory.objects.filter(survey=survey).order_by("category", "keyword")
+            if survey else []
+        )
         return context
 
 

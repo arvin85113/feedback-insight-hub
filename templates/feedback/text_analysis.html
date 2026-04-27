@@ -91,6 +91,45 @@
             </div>
         </article>
     </section>
+
+    <section class="manager-panel">
+        <div class="panel-head">
+            <h2>關鍵字分類規則</h2>
+        </div>
+        <div class="record-list">
+            {% for kc in keyword_categories %}
+                <div class="record-row record-row-stack">
+                    <div>
+                        <strong>{{ kc.keyword }}</strong>
+                        <p>分類：{{ kc.category }}　門檻：{{ kc.threshold }} 次</p>
+                    </div>
+                    <div class="record-meta">
+                        <form method="post" action="{% url 'feedback:keyword-category-delete' kc.pk %}"
+                              onsubmit="return confirm('確定刪除關鍵字規則「{{ kc.keyword }}」？')">
+                            {% csrf_token %}
+                            <button type="submit" class="button button-danger button-small">刪除</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無分類規則</h3>
+                        <p>新增規則後，文字分析結果中的關鍵字將依規則自動歸類。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <form method="post" action="{% url 'feedback:keyword-category-create' %}"
+              class="category-add-form" style="margin-top:16px;">
+            {% csrf_token %}
+            <input type="hidden" name="survey_slug" value="{{ selected_survey.slug }}">
+            <input type="text" name="keyword" placeholder="關鍵字" required>
+            <input type="text" name="category" placeholder="分類名稱" required>
+            <input type="number" name="threshold" value="2" min="1" style="width:80px;">
+            <button type="submit" class="button button-primary button-small">新增規則</button>
+        </form>
+    </section>
 {% else %}
     <section class="manager-panel">
         <div class="empty-card">
