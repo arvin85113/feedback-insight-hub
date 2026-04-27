@@ -1981,7 +1981,7 @@ input[type="checkbox"] {
     align-items: center;
 }
 
-.qr-anchor {
+.qr-popover-wrapper {
     position: relative;
 }
 
@@ -1994,15 +1994,12 @@ input[type="checkbox"] {
     border-radius: var(--radius-md);
     padding: 10px;
     box-shadow: var(--shadow);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s;
+    display: none;
     z-index: 50;
 }
 
-.qr-anchor:hover .qr-popover {
-    opacity: 1;
-    pointer-events: auto;
+.qr-popover-wrapper.open .qr-popover {
+    display: block;
 }
 
 .qr-popover img {
