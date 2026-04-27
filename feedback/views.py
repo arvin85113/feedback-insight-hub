@@ -5,12 +5,14 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+import segno
+
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.text import slugify
-from django.views.generic import CreateView, DeleteView, DetailView, TemplateView
+from django.views.generic import CreateView, DeleteView, DetailView, TemplateView, View
 
 from .forms import (
     ImprovementUpdateForm,
@@ -233,6 +235,17 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
 
         context = self.get_context_data(question_form=question_form, object=self.object)
         return self.render_to_response(context)
+
+
+class SurveyQRCodeView(ManagerRequiredMixin, View):
+    def get(self, request, slug):
+        survey = get_object_or_404(Survey, slug=slug)
+        base_url = request.build_absolute_uri('/')[:-1]
+        survey_url = f"{base_url}/survey/{survey.slug}/"
+        qr = segno.make(survey_url, error='m')
+        response = HttpResponse(content_type='image/svg+xml')
+        qr.save(response, kind='svg', scale=4, border=2)
+        return response
 
 
 class SurveyDeleteView(DashboardBaseMixin, DeleteView):

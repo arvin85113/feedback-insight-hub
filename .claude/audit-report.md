@@ -1,6 +1,49 @@
 # 全面健檢報告
 
-> 初次檢查：2026-04-20　|　最後更新：2026-04-25
+> 初次檢查：2026-04-20　|　最後更新：2026-04-27
+
+---
+
+## 2026-04-27 最新協作狀態
+
+### 已完成
+
+| 項目 | 狀態 |
+|---|---|
+| Login-only UI 清理 | 已完成並推送：前台與 admin 不再顯示 `access_mode` / `source` |
+| Pandas/SciPy 統計引擎 | 已完成並推送：commit `df065d9`，目前接在 Django fallback `feedback/local_service.py` |
+| 推論統計輸出 | `StatsOverviewView` 會傳 `inferential_analysis`，`stats_overview.html` 已顯示推論統計區塊 |
+| Schema 瘦身 | 已完成並推送：commit `94d4de7` |
+| Supabase migration | 已套用 `feedback.0008_remove_feedbacksubmission_source_and_more` |
+
+### Supabase schema 現況
+
+| 表 | 已移除欄位 | 驗證 |
+|---|---|---|
+| `feedback_survey` | `access_mode` | confirmed missing |
+| `feedback_feedbacksubmission` | `source` | confirmed missing |
+
+目前產品已完全收斂成 login-only：`Survey.AccessMode`、`Survey.access_mode`、`FeedbackSubmission.source` 都不再存在於 active schema。
+
+### Pandas 統計規格
+
+| data_type / kind | 敘述統計 | 推論統計 |
+|---|---|---|
+| `continuous` | numeric chart：count / avg / min / max / std | 可作為 DV |
+| `discrete` | numeric chart | 不作為 DV |
+| `nominal` single choice | category chart | 可作為 IV |
+| `nominal` multiple choice | split/explode frequency | 不作為 IV |
+| `ordinal` | category chart | 第一版不進 t-test / ANOVA |
+| `text` | 交給 text-analysis | 不參與 |
+
+推論規則：nominal IV x continuous DV；2 組跑 Welch t-test，3-5 組跑 one-way ANOVA，每組至少 2 筆有效數值，不符合條件回傳 `skipped_reason`。
+
+### 重要協作提醒
+
+- 目前正式策略是 Django-only fallback；Render 的 Django service 建議不要設定 `FEEDBACK_SERVICE_URL`。
+- Flask `/api/stats` 尚未接 Pandas `inferential_analysis`，若重新啟用 Flask，stats 頁會缺少新版推論統計結果。
+- Google OAuth placeholder 必須保留，這是另一位組員的工作，不是過時殘留。
+- `.claude/settings.local.json`、`CLAUDE.md`、`scripts/` 可能有本地未提交協作變更，提交功能改動時不要混入。
 
 ---
 

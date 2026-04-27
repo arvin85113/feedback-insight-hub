@@ -14,6 +14,7 @@ from .views import (
     SurveyDeleteView,
     SurveyDetailView,
     SurveyManagerView,
+    SurveyQRCodeView,
     SurveySubmitSuccessView,
     TextAnalysisView,
 )
@@ -28,6 +29,7 @@ urlpatterns = [
     path("dashboard/forms/", SurveyManagerView.as_view(), name="survey-manager"),
     path("dashboard/forms/new/", SurveyCreateView.as_view(), name="survey-create"),
     path("dashboard/forms/<slug:slug>/builder/", SurveyBuilderView.as_view(), name="survey-builder"),
+    path("dashboard/forms/<slug:slug>/qrcode/", SurveyQRCodeView.as_view(), name="survey-qrcode"),
     path("dashboard/forms/<slug:slug>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
     path("dashboard/stats/", StatsOverviewView.as_view(), name="stats-overview"),
     path("dashboard/text-analysis/", TextAnalysisView.as_view(), name="text-analysis"),

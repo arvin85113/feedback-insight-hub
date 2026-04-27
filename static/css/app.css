@@ -1954,3 +1954,64 @@ input[type="checkbox"] {
     text-overflow: ellipsis;
     max-width: 200px;
 }
+
+/* ── Danger button ── */
+.button-danger {
+    color: white;
+    background: #c0392b;
+    box-shadow: 0 8px 18px rgba(192, 57, 43, 0.22);
+}
+
+.button-danger:hover {
+    background: #a93226;
+}
+
+/* ── Survey manager: record-meta layout ── */
+.record-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+/* ── Survey link group (copy + QR) ── */
+.survey-link-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.qr-anchor {
+    position: relative;
+}
+
+.qr-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 50;
+}
+
+.qr-anchor:hover .qr-popover {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.qr-popover img {
+    display: block;
+    width: 160px;
+    height: 160px;
+}
+
+.copy-survey-link.copied {
+    background: rgba(28, 143, 91, 0.14);
+    color: var(--success);
+}

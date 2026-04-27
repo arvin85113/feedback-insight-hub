@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Feedback Insight Hub** — a bilingual (Traditional Chinese / English) feedback and survey management platform. Django handles presentation, authentication, and ORM; a Flask microservice handles the feedback domain with analytics. The two services share the same PostgreSQL database (Supabase in production).
 
+## Current Collaboration Baseline (2026-04-27)
+
+- The product is now fully login-only. Old quick/hybrid access modes have been removed from UI, admin, runtime payloads, and schema.
+- `Survey.access_mode` and `FeedbackSubmission.source` were removed in migration `feedback/0008_remove_feedbacksubmission_source_and_more.py`.
+- Supabase production database has already applied migration `feedback.0008`; `feedback_survey.access_mode` and `feedback_feedbacksubmission.source` are confirmed removed.
+- Current practical deployment is Django-only fallback. Keep `FEEDBACK_SERVICE_URL` unset unless the Flask service is explicitly deployed and kept schema-compatible.
+- Pandas/SciPy stats are implemented in Django fallback (`feedback/local_service.py`) and shown in `stats_overview.html` via `inferential_analysis`.
+- Flask `/api/stats` still returns the legacy stats payload and does not yet include Pandas `inferential_analysis`; enabling Flask for stats would skip the new inference panel for now.
+- Google login on signup is an intentional disabled placeholder owned by another teammate. Do not remove it as stale UI.
+- Uncommitted local collaboration files may exist (`CLAUDE.md`, `.claude/settings.local.json`, `scripts/`). Do not mix them into unrelated feature commits unless requested.
+
 ## Commands
 
 ### Local Development
@@ -18,6 +29,10 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py ensure_superuser
 python manage.py seed_demo
+
+# Diagnose text encoding / mojibake safely in Windows terminals
+python scripts/diagnose_text_encoding.py
+python scripts/diagnose_text_encoding.py --preview CLAUDE.md
 
 # Start Flask microservice (port 5001)
 python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 5001
@@ -109,18 +124,13 @@ Two user roles (`accounts/models.py`): `CUSTOMER` and `MANAGER`. Role-based acce
 
 ### Survey Access
 
-All surveys require login. `Survey.AccessMode` only has one value:
-
-- `LOGIN = "login"` — authentication required for all survey access
-
-`SurveyDetailView.dispatch` unconditionally redirects unauthenticated users to `/accounts/login/?next=<path>`. There is no anonymous or quick-access mode. The user flow is: scan QR code → redirect to login if not authenticated → fill survey after login.
+All surveys require login. `Survey.AccessMode`, `Survey.access_mode`, and `FeedbackSubmission.source` have been removed from the active schema. `SurveyDetailView.dispatch` unconditionally redirects unauthenticated users to `/accounts/login/?next=<path>`. There is no anonymous or quick-access mode. The user flow is: scan QR code → redirect to login if not authenticated → fill survey after login.
 
 ### Survey Create Flow
 
 `SurveyCreateView` handles `/dashboard/forms/new/`. On valid POST:
 1. `slug` is auto-generated from `slugify(title)`. If collision exists, appends `-2`, `-3`, etc.
-2. `access_mode` is always forced to `Survey.AccessMode.LOGIN`.
-3. `improvement_tracking_enabled` is always forced to `True` (not user-editable).
+2. `improvement_tracking_enabled` is always forced to `True` (not user-editable).
 
 `SurveyCreateForm` fields: `title`, `category`, `description`, `thank_you_email_enabled`, `is_active`.
 
@@ -163,6 +173,30 @@ POST actions (`action` hidden input):
 
 Tokenizes submission text using regex supporting both Chinese characters and English words (2+ chars). Filters a hardcoded stop-word list. Returns top 20 keywords by frequency with `category` field (looked up from `KeywordCategory`). Found in `services/feedback_service/analysis.py` and mirrored in `feedback/local_service.py`.
 
+### Statistical Analysis
+
+`feedback/local_service.py` contains the current Pandas/SciPy statistical engine used by the Django fallback stats path.
+
+`get_survey_pandas_stats(survey)` returns:
+- `charts`: template-compatible chart records (`type="numeric"` or `type="category"`).
+- `inferential_analysis`: automatic t-test / ANOVA records for valid nominal IV x continuous DV pairs.
+
+Rules:
+- `continuous`: numeric chart and dependent variable (DV) candidate.
+- `discrete`: numeric chart only.
+- `nominal`: category chart; single-choice nominal questions can be independent variables (IV).
+- `multiple_choice + nominal`: split/explode frequency chart only, not IV.
+- `ordinal`: category chart only; intentionally excluded from t-test / ANOVA.
+- `text`: handled by text analysis, not the stats inference engine.
+
+Inference rules:
+- 2 valid groups: Welch independent-samples t-test.
+- 3 to 5 valid groups: one-way ANOVA.
+- Each group needs at least 2 numeric values.
+- Invalid combinations return `skipped_reason`.
+
+Important: this engine is currently wired through Django fallback (`feedback/local_service.py`). Flask `/api/stats` has not yet been upgraded to this Pandas contract.
+
 ### Improvement List Page
 
 `/dashboard/improvements/` uses an accordion UI: each survey is a collapsible row. Expanding a survey shows its improvement items and an inline form to add new ones (no page navigation). The inline form POSTs to `/survey/<slug>/improvement/new/`. All interaction is vanilla JS + CSS, no external libraries.
@@ -185,7 +219,7 @@ Copy `.env.example` to `.env`. Key variables:
 | `DEBUG` | `True` | Set `False` in production |
 | `ALLOWED_HOSTS` | — | Comma-separated |
 | `DATABASE_URL` | SQLite | PostgreSQL URL for production (Supabase) |
-| `FEEDBACK_SERVICE_URL` | — | Flask URL; omit to use local provider only |
+| `FEEDBACK_SERVICE_URL` | — | Flask URL; omit to use Django fallback only. Recommended unset unless Flask is deployed and stats parity is updated. |
 | `FEEDBACK_SERVICE_CONNECT_TIMEOUT` | `0.35` | Seconds |
 | `FEEDBACK_SERVICE_READ_TIMEOUT` | `0.8` | Seconds |
 | `FEEDBACK_SERVICE_FAILURE_COOLDOWN` | `30` | Seconds before retrying Flask |
@@ -195,7 +229,7 @@ Copy `.env.example` to `.env`. Key variables:
 
 ## Data Models
 
-**Django ORM** (source of truth): `SurveyCategory`, `Survey`, `Question`, `FeedbackSubmission`, `Answer`, `KeywordCategory`, `ImprovementUpdate`, `ImprovementDispatch` in `feedback/models.py`. `User` (extends `AbstractUser`) with `role` and `notification_opt_in` in `accounts/models.py`.
+**Django ORM** (source of truth): `SurveyCategory`, `Survey`, `Question`, `FeedbackSubmission`, `Answer`, `KeywordCategory`, `ImprovementUpdate`, `ImprovementDispatch` in `feedback/models.py`. `Survey.access_mode` and `FeedbackSubmission.source` no longer exist. `User` (extends `AbstractUser`) with `role` and `notification_opt_in` in `accounts/models.py`.
 
 **SQLAlchemy models** in `services/feedback_service/models.py` mirror the Django schema — they read/write the same tables. When adding fields, update both ORMs and create a Django migration.
 
@@ -221,6 +255,7 @@ Fetched in 2 queries (no N+1): one for all improvements, one for all surveys; gr
 | `feedback/0005` | Remove QUICK/HYBRID choices from Survey.access_mode and FeedbackSubmission.source |
 | `feedback/0006` | Data migration: convert existing hybrid/quick records to login |
 | `feedback/0007` | Add SurveyCategory model; add Survey.category FK |
+| `feedback/0008` | Remove obsolete Survey.access_mode and FeedbackSubmission.source columns |
 
 ## Deployment
 
@@ -241,7 +276,9 @@ Flask==3.1.2
 gunicorn==23.0.0
 psycopg[binary]==3.3.3      # psycopg3, not psycopg2
 python-dotenv==1.0.1
+pandas==2.3.3
 requests==2.32.5
+scipy==1.16.3
 SQLAlchemy==2.0.43
 whitenoise==6.9.0
 ```

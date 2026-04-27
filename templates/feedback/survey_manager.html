@@ -51,6 +51,21 @@
                     <span class="pill {% if survey.is_active %}pill-active{% endif %}">
                         {% if survey.is_active %}已啟用{% else %}草稿中{% endif %}
                     </span>
+                    <div class="survey-link-group">
+                        <button type="button" class="button button-ghost button-small copy-survey-link"
+                                data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'feedback:survey-detail' survey.slug %}">
+                            複製連結
+                        </button>
+                        <div class="qr-anchor">
+                            <button type="button" class="button button-ghost button-small" aria-label="QR Code">
+                                QR
+                            </button>
+                            <div class="qr-popover">
+                                <img src="{% url 'feedback:survey-qrcode' survey.slug %}"
+                                     alt="{{ survey.title }} QR Code" width="160" height="160">
+                            </div>
+                        </div>
+                    </div>
                     <form method="post" action="{% url 'feedback:survey-delete' survey.slug %}"
                           onsubmit="return confirm('確定要刪除「{{ survey.title }}」？此操作無法復原。')">
                         {% csrf_token %}
@@ -68,4 +83,21 @@
         {% endfor %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.copy-survey-link').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        navigator.clipboard.writeText(btn.dataset.url).then(function() {
+            btn.textContent = '已複製！';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = '複製連結';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    });
+});
+</script>
 {% endblock %}
