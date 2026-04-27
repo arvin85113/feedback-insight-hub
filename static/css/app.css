@@ -1734,3 +1734,134 @@ input[type="checkbox"] {
 .google-btn-primary:hover {
     opacity: 0.9;
 }
+
+/* ── Builder vertical layout ── */
+.builder-panel-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.builder-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 16px;
+}
+
+.add-question-trigger {
+    padding: 8px 0 4px;
+}
+
+#add-question-panel {
+    margin-top: 4px;
+}
+
+/* ── Question card ── */
+.question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.question-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    gap: 12px;
+}
+
+.question-card-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.question-card-info strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.question-order-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.question-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ── Option input list ── */
+.option-input-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.option-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-input {
+    flex: 1;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+}
+
+.option-input:focus {
+    border-bottom-color: var(--brand);
+}
+
+.option-del-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.option-del-btn:hover {
+    color: var(--danger, #e53e3e);
+}
+
+.option-add-btn {
+    background: none;
+    border: none;
+    color: var(--brand);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.option-add-btn:hover {
+    opacity: 0.8;
+}
