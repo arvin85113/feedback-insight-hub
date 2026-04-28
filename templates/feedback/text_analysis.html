@@ -41,11 +41,21 @@
             <span>已分析回覆</span>
             <strong>{{ analysis_summary.analyzed_answers|default:0 }} / {{ analysis_summary.total_answers|default:0 }}</strong>
         </article>
-        <article class="kpi-chip">
-            <span>平均情緒分數</span>
+        <article class="kpi-chip" title="整體氣氛參考，非正式滿意度指標">
+            <span>平均情緒分數（參考）</span>
             <strong>{{ analysis_summary.avg_sentiment_score|default:"-" }}</strong>
         </article>
     </section>
+
+    <div class="kpi-help-callout" role="note" aria-label="關於平均情緒分數的說明">
+        <p class="kpi-help-title">關於「平均情緒分數（參考）」</p>
+        <p class="kpi-help-text">
+            此數值由系統以<strong>內建詞庫</strong>（正負面詞、否定、程度等規則）估算每一則文字回覆的傾向，得出一個大約在 <strong>−1（偏負向）</strong> 到 <strong>+1（偏正向）</strong> 之間的數字，再對目前<strong>已分析</strong>的回覆做<strong>算術平均</strong>。接近 0 表示整體語氣相對中性，偏向正或負則是<strong>大方向參考</strong>，方便一眼感受整體氣氛。
+        </p>
+        <p class="kpi-help-text">
+            它<strong>不應</strong>當成正式「滿意度分數」或與他校／他系數字直接比高低；內容過短、未含情緒詞時，也容易落在中性。若要判斷<strong>各主題</strong>（如價格、服務）是正是負、哪裡需要優先關注，請以本頁下方的<strong>分類情緒分布</strong>與<strong>關鍵字主題</strong>為主，必要時回頭閱讀實際回覆原文。
+        </p>
+    </div>
 
     <section class="manager-content-grid analytics-grid">
         <article class="manager-panel">
@@ -89,13 +99,36 @@
             <div class="panel-head">
                 <h3>分類情緒分布</h3>
             </div>
-            <div class="record-list">
+            <div class="record-list sentiment-by-category">
                 {% for row in category_sentiments %}
-                    <div class="record-row record-row-stack">
-                        <div>
+                    <div class="record-row record-row-stack sentiment-category-row">
+                        <div class="sentiment-category-head">
                             <strong>{{ row.category }}</strong>
-                            <p>正向 {{ row.positive }} / 中性 {{ row.neutral }} / 負向 {{ row.negative }}（共 {{ row.total }}）</p>
+                            <span class="muted-text sentiment-total">共 {{ row.total }} 筆</span>
                         </div>
+                        {% if row.total %}
+                            {% widthratio row.positive row.total 100 as pct_pos %}
+                            {% widthratio row.neutral row.total 100 as pct_neu %}
+                            {% widthratio row.negative row.total 100 as pct_neg %}
+                            <div
+                                class="sentiment-stacked"
+                                role="img"
+                                aria-label="{{ row.category }} 情緒：正向 {{ row.positive }}、中性 {{ row.neutral }}、負向 {{ row.negative }}，合計 {{ row.total }}"
+                            >
+                                <div class="sentiment-stacked-track">
+                                    <span class="sentiment-slice sentiment-slice--positive" style="width: {{ pct_pos }}%"></span>
+                                    <span class="sentiment-slice sentiment-slice--neutral" style="width: {{ pct_neu }}%"></span>
+                                    <span class="sentiment-slice sentiment-slice--negative" style="width: {{ pct_neg }}%"></span>
+                                </div>
+                            </div>
+                            <ul class="sentiment-legend" aria-hidden="true">
+                                <li><span class="sentiment-dot sentiment-dot--positive"></span> 正向 {{ row.positive }}（{{ pct_pos }}%）</li>
+                                <li><span class="sentiment-dot sentiment-dot--neutral"></span> 中性 {{ row.neutral }}（{{ pct_neu }}%）</li>
+                                <li><span class="sentiment-dot sentiment-dot--negative"></span> 負向 {{ row.negative }}（{{ pct_neg }}%）</li>
+                            </ul>
+                        {% else %}
+                            <p class="muted-text">此分類暫無筆數。</p>
+                        {% endif %}
                     </div>
                 {% empty %}
                     <div class="empty-card">

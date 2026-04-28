@@ -1,8 +1,8 @@
 import json
 from collections import Counter
-from functools import lru_cache
 from pathlib import Path
 import re
+from typing import Any, Callable, TypeVar
 
 try:
     import jieba
@@ -30,74 +30,109 @@ DEFAULT_STOP_WORDS = {
 }
 ANALYSIS_VERSION = "v2"
 
+_T = TypeVar("_T")
+# path.resolve() 字串 -> (簽名, 快取內容)；簽名變化時重讀（檔案新增/刪除/儲存）
+_file_load_cache: dict[str, tuple[tuple, Any]] = {}
 
-@lru_cache(maxsize=1)
+
+def _path_cache_signature(path: Path) -> tuple:
+    try:
+        st = path.stat()
+        return (True, st.st_mtime_ns)
+    except OSError:
+        return (False, 0.0)
+
+
+def _cached_data(path: Path, factory: Callable[[], _T]) -> _T:
+    key = str(path.resolve())
+    sig = _path_cache_signature(path)
+    hit = _file_load_cache.get(key)
+    if hit and hit[0] == sig:
+        return hit[1]  # type: ignore[return-value]
+    data = factory()
+    _file_load_cache[key] = (sig, data)
+    return data
+
+
 def load_stop_words():
-    if not STOPWORDS_PATH.exists():
-        return DEFAULT_STOP_WORDS
+    def _read():
+        if not STOPWORDS_PATH.exists():
+            return DEFAULT_STOP_WORDS
 
-    words = set()
-    for line in STOPWORDS_PATH.read_text(encoding="utf-8").splitlines():
-        token = line.strip().lower()
-        if not token or token.startswith("#"):
-            continue
-        words.add(token)
-    return words or DEFAULT_STOP_WORDS
+        words = set()
+        for line in STOPWORDS_PATH.read_text(encoding="utf-8").splitlines():
+            token = line.strip().lower()
+            if not token or token.startswith("#"):
+                continue
+            words.add(token)
+        return words or DEFAULT_STOP_WORDS
+
+    return _cached_data(STOPWORDS_PATH, _read)
 
 
-@lru_cache(maxsize=1)
 def load_synonyms():
-    if not SYNONYMS_PATH.exists():
-        return {}
-    try:
-        raw = json.loads(SYNONYMS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return {}
-    return {str(k).lower(): str(v).lower() for k, v in raw.items()}
+    def _read():
+        if not SYNONYMS_PATH.exists():
+            return {}
+        try:
+            raw = json.loads(SYNONYMS_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {}
+        return {str(k).lower(): str(v).lower() for k, v in raw.items()}
+
+    return _cached_data(SYNONYMS_PATH, _read)
 
 
-@lru_cache(maxsize=1)
 def load_positive_words():
-    if not POSITIVE_WORDS_PATH.exists():
-        return {"滿意", "推薦", "喜歡", "方便", "快速", "友善", "舒適", "乾淨"}
-    return {
-        line.strip().lower()
-        for line in POSITIVE_WORDS_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    }
+    def _read():
+        if not POSITIVE_WORDS_PATH.exists():
+            return {"滿意", "推薦", "喜歡", "方便", "快速", "友善", "舒適", "乾淨"}
+        return {
+            line.strip().lower()
+            for line in POSITIVE_WORDS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        }
+
+    return _cached_data(POSITIVE_WORDS_PATH, _read)
 
 
-@lru_cache(maxsize=1)
 def load_negative_words():
-    if not NEGATIVE_WORDS_PATH.exists():
-        return {"不滿意", "慢", "昂貴", "髒亂", "困難", "糟糕", "抱怨", "失望"}
-    return {
-        line.strip().lower()
-        for line in NEGATIVE_WORDS_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    }
+    def _read():
+        if not NEGATIVE_WORDS_PATH.exists():
+            return {"不滿意", "慢", "昂貴", "髒亂", "困難", "糟糕", "抱怨", "失望"}
+        return {
+            line.strip().lower()
+            for line in NEGATIVE_WORDS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        }
+
+    return _cached_data(NEGATIVE_WORDS_PATH, _read)
 
 
-@lru_cache(maxsize=1)
 def load_negation_words():
-    if not NEGATION_WORDS_PATH.exists():
-        return {"不", "不是", "不太", "沒有", "沒", "別", "非"}
-    return {
-        line.strip().lower()
-        for line in NEGATION_WORDS_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    }
+    def _read():
+        if not NEGATION_WORDS_PATH.exists():
+            return {"不", "不是", "不太", "沒有", "沒", "別", "非"}
+        return {
+            line.strip().lower()
+            for line in NEGATION_WORDS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        }
+
+    return _cached_data(NEGATION_WORDS_PATH, _read)
 
 
-@lru_cache(maxsize=1)
 def load_intensifiers():
-    if not INTENSIFIERS_PATH.exists():
-        return {"很": 1.2, "非常": 1.6, "超": 1.5, "太": 1.4, "有點": 0.8}
-    try:
-        raw = json.loads(INTENSIFIERS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return {"很": 1.2, "非常": 1.6, "超": 1.5, "太": 1.4, "有點": 0.8}
-    return {str(k).lower(): float(v) for k, v in raw.items()}
+    def _read():
+        if not INTENSIFIERS_PATH.exists():
+            return {"很": 1.2, "非常": 1.6, "超": 1.5, "太": 1.4, "有點": 0.8}
+        try:
+            raw = json.loads(INTENSIFIERS_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {"很": 1.2, "非常": 1.6, "超": 1.5, "太": 1.4, "有點": 0.8}
+        return {str(k).lower(): float(v) for k, v in raw.items()}
+
+    return _cached_data(INTENSIFIERS_PATH, _read)
 
 
 def _regex_tokenize(text):
