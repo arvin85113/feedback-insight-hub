@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
 from django.db.models import Count, Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -112,6 +112,8 @@ class MarkNoticeReadView(CustomerRequiredMixin, View):
         )
         dispatch.is_read = True
         dispatch.save(update_fields=["is_read"])
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True})
         return redirect("feedback:customer-notifications")
 
 
