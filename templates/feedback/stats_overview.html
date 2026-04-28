@@ -80,12 +80,23 @@
                                 <ul class="feature-list compact-list">
                                     <li>有效樣本：{{ chart.count }}</li>
                                     <li>平均值：{{ chart.avg }}</li>
+                                    <li>中位數 / 標準差：{{ chart.median }} / {{ chart.std }}</li>
                                     <li>最小 / 最大：{{ chart.min }} / {{ chart.max }}</li>
+                                    {% if chart.ci_low is not None and chart.ci_high is not None %}
+                                        <li>平均值 95% 信賴區間：{{ chart.ci_low }} ~ {{ chart.ci_high }}</li>
+                                    {% endif %}
+                                    {% if chart.counts %}
+                                        <li>離散分布：
+                                            {% for row in chart.counts %}
+                                                {{ row.value }}（{{ row.total }}）{% if not forloop.last %}、{% endif %}
+                                            {% endfor %}
+                                        </li>
+                                    {% endif %}
                                 </ul>
                             {% else %}
                                 <ul class="feature-list compact-list">
                                     {% for row in chart.counts %}
-                                        <li>{{ row.value }}：{{ row.total }}</li>
+                                        <li>{{ row.value }}：{{ row.total }}{% if row.percent is not None %}（{{ row.percent }}%）{% endif %}</li>
                                     {% endfor %}
                                 </ul>
                             {% endif %}
@@ -114,12 +125,18 @@
                             {% if result.skipped_reason %}
                                 <p>{{ result.skipped_reason }}</p>
                             {% else %}
-                                <p>{{ result.test_name }}，p-value：{{ result.p_value }}</p>
+                                <p>{{ result.test_name }}，統計量：{{ result.statistic }}，p-value：{{ result.p_value }}</p>
+                                {% if result.effect_size is not None %}
+                                    <p>{{ result.effect_label }}：{{ result.effect_size }}</p>
+                                {% endif %}
                                 <p>{{ result.insight }}</p>
+                                {% if result.warning %}
+                                    <p>{{ result.warning }}</p>
+                                {% endif %}
                                 {% if result.groups %}
                                     <ul class="feature-list compact-list">
                                         {% for group in result.groups %}
-                                            <li>{{ group.value }}：{{ group.count }} 筆，平均 {{ group.avg }}</li>
+                                            <li>{{ group.value }}：{{ group.count }} 筆{% if group.avg is not None %}，摘要值 {{ group.avg }}{% endif %}</li>
                                         {% endfor %}
                                     </ul>
                                 {% endif %}

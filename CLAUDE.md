@@ -189,7 +189,7 @@ The project uses an **analysis-purpose data type model**, not a pure Stevens fou
 
 `get_survey_pandas_stats(survey)` returns:
 - `charts`: template-compatible chart records (`type="numeric"` or `type="category"`).
-- `inferential_analysis`: automatic t-test / ANOVA records for valid nominal IV x continuous DV pairs.
+- `inferential_analysis`: automatic statistical test records. Each record can include `analysis_family`, `method_key`, `test_name`, `statistic`, `p_value`, `effect_size`, `effect_label`, `is_significant`, `insight`, `warning`, or `skipped_reason`.
 
 Rules:
 - `continuous`: numeric quantity with meaningful magnitude, such as score, money, time, or ratio. It gets numeric summaries and can be a dependent variable (DV) in t-test / ANOVA.
@@ -200,9 +200,12 @@ Rules:
 - `text`: handled by text analysis, not the stats inference engine.
 
 Inference rules:
-- 2 valid groups: Welch independent-samples t-test.
-- 3 to 5 valid groups: one-way ANOVA.
-- Each group needs at least 2 numeric values.
+- `nominal IV x continuous DV`: 2 valid groups use Welch independent-samples t-test; 3 to 5 valid groups use one-way ANOVA. Each group needs at least 2 numeric values. Effect size is Cohen's d for t-test and eta squared for ANOVA.
+- `nominal x nominal`: uses chi-square test of independence for single-choice nominal questions. Multiple-choice nominal questions are excluded because one response can belong to multiple groups. Effect size is Cramer's V.
+- `nominal IV x ordinal DV`: uses Mann-Whitney U for 2 groups and Kruskal-Wallis for 3 to 5 groups. Ordinal questions need `options_text` so the engine can safely map labels to ranks.
+- `continuous x continuous`: uses Pearson correlation.
+- Any pair involving ordinal ranks in correlation uses Spearman correlation.
+- Numeric charts include count, mean, median, std, min, max, and 95% confidence interval for the mean when there are at least 2 values.
 - Invalid combinations return `skipped_reason`.
 
 Important: this engine is currently wired through Django fallback (`feedback/local_service.py`). Flask `/api/stats` has not yet been upgraded to this Pandas contract.

@@ -52,14 +52,20 @@
 
 | data_type / kind | 敘述統計 | 推論統計 |
 |---|---|---|
-| `continuous` | 有實際數量意義的數值：評分、金額、時間、比例；numeric chart：count / avg / min / max / std | 可作為 DV |
+| `continuous` | 有實際數量意義的數值：評分、金額、時間、比例；numeric chart：count / avg / median / min / max / std / 95% CI | 可作為 DV |
 | `discrete` | 計數型或編碼型數值：拜訪次數、件數、等級編號；numeric chart | 不作為 DV |
 | `nominal` single choice | 無順序分類：部門、地區、角色、問題類型；category chart | 可作為 IV |
 | `nominal` multiple choice | 多重回應；split/explode frequency | 不作為 IV |
 | `ordinal` | 有順序但間距不保證相等：非常滿意 / 滿意 / 普通 / 不滿意；category chart | 第一版不進 t-test / ANOVA |
 | `text` | 交給 text-analysis | 不參與 |
 
-推論規則：nominal IV x continuous DV；2 組跑 Welch t-test，3-5 組跑 one-way ANOVA，每組至少 2 筆有效數值，不符合條件回傳 `skipped_reason`。
+推論規則：
+- `nominal IV x continuous DV`：2 組跑 Welch t-test，3-5 組跑 one-way ANOVA，每組至少 2 筆有效數值；效果量分別為 Cohen's d / eta squared。
+- `nominal x nominal`：單選名目題之間跑卡方獨立性檢定，效果量為 Cramer's V；多選名目題排除，避免一筆回覆同屬多組。
+- `nominal IV x ordinal DV`：2 組跑 Mann-Whitney U，3-5 組跑 Kruskal-Wallis；ordinal 題必須有 `options_text` 才能安全轉換排序分數。
+- `continuous x continuous`：Pearson correlation。
+- 涉及 ordinal rank 的相關分析：Spearman correlation。
+- 不符合條件回傳 `skipped_reason`，前端仍可顯示為跳過原因。
 
 Builder UI 規則：
 - `short_text` / `long_text` 固定為 `text`
@@ -101,7 +107,7 @@ Builder UI 規則：
 
 **blank=True vs NOT nullable 說明：** Django `blank=True` 是 form validation 層，不是 DB nullable。這些欄位 Django 端沒有 `null=True`，DB 實際 NOT NULL、寫入空字串。SQLAlchemy `Mapped[str]` 正確反映，無需修改。
 
-> ⚠️ 注意：`SurveyCategory` 目前只有 Django ORM，尚未加入 SQLAlchemy models。若 Flask 需要讀取分類資料，需補上。
+> `SurveyCategory` 已補入 SQLAlchemy models；目前 Django source-of-truth 與 Flask ORM 映射已對齊。
 
 ---
 
