@@ -61,6 +61,12 @@ python manage.py runserver
 若未設定 `FEEDBACK_SERVICE_URL`，Django 會直接使用本地 provider，適合目前的 Django-only 開發或部署方式。
 若設定 `FEEDBACK_SERVICE_URL`，Django 會優先呼叫 Flask 微服務；Flask 暫時不可用時，Django 仍會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
 
+## 共用測試基準資料
+
+- 問卷 mock 資料放在 `feedback/fixtures/beverage_survey_mock_100.csv`。
+- 此檔案用於團隊共用測試、整合驗證與展示，不是正式營運資料。
+- 請勿放入真實個資；若更新內容，請在 PR 說明欄位、筆數或分布變更。
+
 ## 重要環境變數
 
 ```text
