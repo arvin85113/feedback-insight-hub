@@ -734,6 +734,230 @@ ul.errorlist {
     align-items: start;
 }
 
+.analytics-hero {
+    align-items: end;
+}
+
+.analytics-flow-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(196, 91, 43, 0.18);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(196, 91, 43, 0.08), rgba(26, 53, 84, 0.05));
+}
+
+.flow-step {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.flow-step-active {
+    color: var(--brand);
+    box-shadow: inset 0 0 0 1px rgba(196, 91, 43, 0.2);
+}
+
+.flow-arrow {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.analytics-kpi-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analytics-workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.analytics-panel-note {
+    margin: 0 0 16px;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.analytics-question-map,
+.method-router-grid,
+.analytics-result-grid,
+.analytics-inference-list {
+    display: grid;
+    gap: 14px;
+}
+
+.analytics-question-map {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.analytics-question-card,
+.method-router-card,
+.analytics-result-card {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.analytics-question-card p,
+.method-router-card p,
+.analytics-result-card p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.analytics-question-head,
+.analytics-result-head,
+.analytics-family-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.analytics-section-panel {
+    margin-top: 20px;
+}
+
+.analysis-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(26, 53, 84, 0.08);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.method-descriptive {
+    background: rgba(26, 53, 84, 0.1);
+    color: var(--ink);
+}
+
+.method-mean {
+    background: rgba(28, 143, 91, 0.14);
+    color: var(--success);
+}
+
+.method-category {
+    background: rgba(73, 116, 190, 0.14);
+    color: #335f9f;
+}
+
+.method-rank {
+    background: rgba(196, 91, 43, 0.14);
+    color: var(--brand);
+}
+
+.method-correlation {
+    background: rgba(126, 87, 194, 0.14);
+    color: #6545a6;
+}
+
+.method-ready {
+    background: rgba(28, 143, 91, 0.14);
+    color: var(--success);
+}
+
+.method-skipped {
+    background: rgba(176, 122, 0, 0.14);
+    color: #8a5f00;
+}
+
+.analytics-metric-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 14px 0 0;
+}
+
+.analytics-metric-list div {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(26, 53, 84, 0.05);
+}
+
+.analytics-metric-list dt {
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.analytics-metric-list dd {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 800;
+}
+
+.analytics-frequency-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.analytics-frequency-item,
+.analytics-frequency-row span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 11px;
+    border-radius: 12px;
+    background: rgba(26, 53, 84, 0.05);
+    color: var(--ink);
+}
+
+.analytics-frequency-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.analytics-result-muted {
+    background: rgba(255, 248, 230, 0.65);
+}
+
+.analytics-skip-reason,
+.analytics-warning {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(176, 122, 0, 0.1);
+    color: #7a5800 !important;
+}
+
+.analytics-insight {
+    padding: 12px 14px;
+    border-left: 4px solid var(--brand);
+    border-radius: 10px;
+    background: rgba(196, 91, 43, 0.08);
+    color: var(--ink) !important;
+}
+
+.analytics-family-block {
+    display: grid;
+    gap: 12px;
+}
+
+.analytics-family-head {
+    padding: 8px 2px 0;
+}
+
 .manager-filter-form {
     min-width: 280px;
 }

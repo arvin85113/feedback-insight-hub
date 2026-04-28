@@ -210,6 +210,14 @@ Inference rules:
 
 Important: this engine is currently wired through Django fallback (`feedback/local_service.py`). Flask `/api/stats` has not yet been upgraded to this Pandas contract.
 
+Stats overview UI (`templates/feedback/stats_overview.html`) is structured as an analysis workflow:
+- survey selector and KPI strip
+- flow strip: select survey -> read data types -> recommend methods -> validate conditions and explain
+- data map cards for each question
+- method router cards explaining descriptive stats, mean comparison, categorical association, rank tests, and correlation
+- descriptive statistics cards
+- inferential analysis grouped by `analysis_family`, with executed results and skipped-condition cards
+
 Builder UI rules:
 - `short_text` / `long_text` -> fixed `text`.
 - `single_choice` -> user chooses `ordinal` or `nominal`.
