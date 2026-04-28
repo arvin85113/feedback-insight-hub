@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -15,6 +15,9 @@ from .models import (
     keyword_summary,
     recommend_analysis,
 )
+
+_STATS_PAYLOAD_CACHE = {}
+_STATS_PAYLOAD_CACHE_MAX_SIZE = 16
 
 
 def serialize_survey(survey, response_total=None):
@@ -665,8 +668,20 @@ def get_stats_payload(slug):
     survey = Survey.objects.filter(slug=slug).first() if slug else None
     if not survey:
         return {"charts": [], "question_analysis": [], "inferential_analysis": []}
+
+    question_signature = tuple(
+        Question.objects.filter(survey=survey)
+        .order_by("order", "id")
+        .values_list("id", "title", "kind", "data_type", "options_text", "order")
+    )
+    answer_signature = Answer.objects.filter(question__survey=survey).aggregate(count=Count("id"), max_id=Max("id"))
+    cache_key = (survey.id, question_signature, answer_signature["count"], answer_signature["max_id"])
+    cached_payload = _STATS_PAYLOAD_CACHE.get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
     pandas_stats = get_survey_pandas_stats(survey)
-    return {
+    payload = {
         "charts": pandas_stats["charts"] or chart_summary(survey),
         "question_analysis": [
             {
@@ -678,6 +693,10 @@ def get_stats_payload(slug):
         ],
         "inferential_analysis": pandas_stats["inferential_analysis"],
     }
+    if len(_STATS_PAYLOAD_CACHE) >= _STATS_PAYLOAD_CACHE_MAX_SIZE:
+        _STATS_PAYLOAD_CACHE.clear()
+    _STATS_PAYLOAD_CACHE[cache_key] = payload
+    return payload
 
 
 def get_text_analysis_payload(slug):

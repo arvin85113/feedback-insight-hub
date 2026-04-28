@@ -9,7 +9,7 @@
         <h1>統計分析</h1>
         <p>依照問卷題型與資料型態，自動整理描述統計、推薦可用檢定，並顯示執行結果或跳過原因。</p>
     </div>
-    <form method="get" class="form-stack manager-filter-form">
+    <form method="get" class="form-stack manager-filter-form stats-filter-form">
         <div class="field-block">
             <label for="stats-survey">選擇問卷</label>
             <select id="stats-survey" name="survey" onchange="this.form.submit()">
@@ -18,6 +18,8 @@
                     <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
                 {% endfor %}
             </select>
+            <button type="submit" class="button button-primary button-small stats-submit-btn">開始分析</button>
+            <p class="stats-loading-hint" aria-live="polite">第一次分析會載入 Pandas / SciPy，Render 上可能需要數秒；同問卷再次開啟會快很多。</p>
         </div>
     </form>
 </section>
@@ -254,4 +256,27 @@
         </div>
     </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const form = document.querySelector('.stats-filter-form');
+    if (!form) return;
+    const submitButton = form.querySelector('.stats-submit-btn');
+    const select = form.querySelector('select[name="survey"]');
+    function markLoading() {
+        if (!select || !select.value) return;
+        form.classList.add('stats-filter-loading');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = '分析中...';
+        }
+    }
+    form.addEventListener('submit', markLoading);
+    if (select) {
+        select.addEventListener('change', markLoading);
+    }
+})();
+</script>
 {% endblock %}

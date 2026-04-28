@@ -962,6 +962,28 @@ ul.errorlist {
     min-width: 280px;
 }
 
+.stats-filter-form .field-block {
+    gap: 10px;
+}
+
+.stats-submit-btn {
+    align-self: flex-end;
+    width: fit-content;
+}
+
+.stats-loading-hint {
+    max-width: 320px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.stats-filter-loading .stats-loading-hint {
+    color: var(--brand);
+    font-weight: 700;
+}
+
 .insight-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
