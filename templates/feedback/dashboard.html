@@ -102,7 +102,7 @@
                 <a class="record-row" href="{% url 'feedback:survey-builder' survey.slug %}">
                     <div>
                         <strong>{{ survey.title }}</strong>
-                        <p>{{ survey.access_mode_display }}</p>
+                        <p>{{ survey.questions.count }} 題</p>
                     </div>
                     <div class="record-meta">
                         <span class="pill pill-active">{{ survey.submissions.count }} 份回覆</span>

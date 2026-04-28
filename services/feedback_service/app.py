@@ -39,14 +39,20 @@ def build_category_sentiments(answer_rows, category_map):
     return sorted(bucket.values(), key=lambda item: item["total"], reverse=True)
 
 
+def format_payload_date(value: datetime) -> str:
+    return f"{value.year}/{value.month}/{value.day}"
+
+
+def format_payload_datetime(value: datetime) -> str:
+    return f"{format_payload_date(value)} {value:%H:%M}"
+
+
 def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
     return {
         "id": survey.id,
         "title": survey.title,
         "slug": survey.slug,
         "description": survey.description,
-        "access_mode": survey.access_mode,
-        "access_mode_display": access_mode_label(survey.access_mode),
         "improvement_tracking_enabled": survey.improvement_tracking_enabled,
         "thank_you_email_enabled": survey.thank_you_email_enabled,
         "questions": {"count": len(survey.questions)},
@@ -58,9 +64,12 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
     display_name = submission.respondent_name
     if not display_name and submission.user:
         display_name = f"{submission.user.first_name} {submission.user.last_name}".strip() or submission.user.username
+    category = submission.survey.category
     return {
         "id": submission.id,
         "submitted_at": submission.submitted_at.isoformat(),
+        "submitted_date": format_payload_date(submission.submitted_at),
+        "submitted_datetime": format_payload_datetime(submission.submitted_at),
         "consent_follow_up": submission.consent_follow_up,
         "respondent_email": submission.respondent_email,
         "display_name": display_name or "匿名填答者",
@@ -68,6 +77,7 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
             "id": submission.survey.id,
             "title": submission.survey.title,
             "slug": submission.survey.slug,
+            "category": {"id": category.id, "name": category.name} if category else None,
         },
         "answers": {"count": answer_count if answer_count is not None else len(submission.answers)},
     }
@@ -92,6 +102,18 @@ def serialize_notice(dispatch: ImprovementDispatch) -> dict:
             "summary": dispatch.improvement.summary,
         },
     }
+
+
+def build_submission_preview(submission: FeedbackSubmission) -> str:
+    answers = sorted(submission.answers, key=lambda answer: (answer.question.order, answer.question.id))
+    for answer in answers:
+        value = (answer.value or "").strip()
+        if not value:
+            continue
+        if len(value) > 42:
+            value = f"{value[:42]}..."
+        return f"{answer.question.title}：{value}"
+    return ""
 
 
 @app.get("/health")
@@ -137,7 +159,11 @@ def customer_home(user_id: int):
 
         submissions = session.scalars(
             select(FeedbackSubmission)
-            .options(joinedload(FeedbackSubmission.survey), joinedload(FeedbackSubmission.user), joinedload(FeedbackSubmission.answers))
+            .options(
+                joinedload(FeedbackSubmission.survey).joinedload(Survey.category),
+                joinedload(FeedbackSubmission.user),
+                joinedload(FeedbackSubmission.answers).joinedload(Answer.question),
+            )
             .where(FeedbackSubmission.user_id == user_id)
             .order_by(FeedbackSubmission.submitted_at.desc())
         ).unique().all()
@@ -159,6 +185,7 @@ def customer_home(user_id: int):
                 {
                     "submission": serialize_submission(submission, len(submission.answers)),
                     "answer_count": len(submission.answers),
+                    "answer_preview": build_submission_preview(submission),
                     "latest_notice": serialize_notice(latest_notice) if latest_notice else None,
                 }
             )
@@ -300,7 +327,7 @@ def dashboard():
                 "action_items": [
                     {
                         "title": "建立新問卷",
-                        "meta": "新增題組、設定填答模式與通知規則。",
+                        "meta": "新增題組、整理題目流程與通知規則。",
                         "url": "/dashboard/forms/new/",
                         "url_label": "開始建立",
                     },
@@ -363,11 +390,17 @@ def stats():
                 )
 
             if question.data_type == "continuous":
-                analysis = "適合進一步做平均數比較、趨勢檢視，或延伸到 t 檢定與 ANOVA。"
-            elif question.data_type in {"nominal", "ordinal"}:
-                analysis = "適合以比例分布、交叉分析與卡方檢定檢查不同群體間差異。"
+                analysis = "適合做平均數、標準差與趨勢檢視；若搭配名目分組題，可延伸到 t 檢定與 ANOVA。"
+            elif question.data_type == "discrete":
+                analysis = "適合做計數型數值摘要，例如總數、平均次數與分布；第一版不自動進入 t 檢定或 ANOVA。"
+            elif question.data_type == "nominal":
+                analysis = "適合做比例分布與交叉分析；單選名目題可作為推論統計的分組變數。"
+            elif question.data_type == "ordinal":
+                analysis = "適合做次數、比例與排序分布；因間距不一定相等，第一版不進入 t 檢定或 ANOVA。"
+            elif question.data_type == "text":
+                analysis = "適合做關鍵字、情緒傾向與主題聚類，提取具體改善線索。"
             else:
-                analysis = "適合做文字主題、情緒與關鍵字分析，萃取顧客原聲。"
+                analysis = "建議先確認資料尺度，再選擇描述統計或推論統計方法。"
 
             question_analysis.append(
                 {
@@ -429,7 +462,6 @@ def create_submission(slug: str):
             user_id=payload.get("user_id"),
             respondent_name=payload.get("respondent_name", ""),
             respondent_email=payload.get("respondent_email", ""),
-            source=payload.get("source", "login"),
             consent_follow_up=bool(payload.get("consent_follow_up", False)),
             submitted_at=datetime.now(),
         )

@@ -12,10 +12,6 @@
 
     <div class="kpi-strip">
         <article class="kpi-chip">
-            <span>填答模式</span>
-            <strong>{{ survey.get_access_mode_display }}</strong>
-        </article>
-        <article class="kpi-chip">
             <span>問題數量</span>
             <strong>{{ survey.questions.count }}</strong>
         </article>
@@ -25,12 +21,17 @@
         </article>
     </div>
 
+    {% if survey_notice %}
+        <article class="survey-notice survey-notice-{{ survey_notice_type|default:'info' }}">
+            <p>{{ survey_notice }}</p>
+        </article>
+    {% else %}
     <form method="post" class="survey-card-stack">
         {% csrf_token %}
         <article class="survey-card survey-card-accent">
             <h2>基本填答資訊</h2>
             <div class="form-grid">
-                {% for field in quick_form %}
+                {% for field in respondent_form %}
                     <div class="field-block">
                         {{ field.label_tag }}
                         {{ field }}
@@ -58,5 +59,6 @@
             <button type="submit" class="button button-primary">送出回饋</button>
         </div>
     </form>
+    {% endif %}
 </section>
 {% endblock %}

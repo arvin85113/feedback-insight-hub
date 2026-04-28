@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}資料設定 | FeedBack IQ{% endblock %}
+
+{% block content %}
+<section class="portal-header">
+    <div>
+        <p class="section-kicker">Profile Settings</p>
+        <h1>更新你的個人資料</h1>
+        <p>這裡只管理姓名、Email 與所屬單位；通知開關與逐問卷追蹤設定請到通知偏好頁面調整。</p>
+    </div>
+    <div class="portal-actions">
+        <a class="button button-ghost" href="{% url 'feedback:customer-home' %}">返回顧客端</a>
+        <a class="button button-primary" href="{% url 'accounts:preferences' %}">通知偏好</a>
+    </div>
+</section>
+
+<section class="portal-grid portal-grid-wide">
+    <article class="surface-card">
+        <h2>個人資料</h2>
+        <form method="post" class="form-stack">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field-block">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button button-primary">儲存資料</button>
+        </form>
+    </article>
+    <article class="surface-card muted-card">
+        <h2>資料用途</h2>
+        <ul class="feature-list">
+            <li>Email 會用於登入識別與改善通知寄送。</li>
+            <li>姓名與所屬單位只用於讓你在顧客端辨識自己的帳戶資料。</li>
+            <li>是否接收改善通知請到通知偏好頁面調整。</li>
+        </ul>
+    </article>
+</section>
+{% endblock %}

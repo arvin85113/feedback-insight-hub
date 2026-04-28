@@ -45,7 +45,7 @@ python manage.py ensure_superuser
 python manage.py seed_demo
 ```
 
-3. 啟動 Flask 微服務
+3. 可選：啟動 Flask 微服務
 
 ```bash
 python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 5001
@@ -57,8 +57,9 @@ python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 
 python manage.py runserver
 ```
 
-若未設定 `FEEDBACK_SERVICE_URL`，Django 會退回本地 provider，方便單機開發；設定後則會優先呼叫 Flask 微服務。
-若 Flask 微服務暫時不可用，Django 會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
+目前所有問卷都採登入後填答，沒有匿名或快速填答模式。
+若未設定 `FEEDBACK_SERVICE_URL`，Django 會直接使用本地 provider，適合目前的 Django-only 開發或部署方式。
+若設定 `FEEDBACK_SERVICE_URL`，Django 會優先呼叫 Flask 微服務；Flask 暫時不可用時，Django 仍會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
 
 ## 重要環境變數
 
@@ -100,3 +101,5 @@ python manage.py rebuild_text_analysis --dry-run
 python manage.py rebuild_text_analysis
 python manage.py rebuild_text_analysis --survey <survey-slug>
 ```
+
+若只部署 Django，請不要設定 `FEEDBACK_SERVICE_URL`，系統會直接走 Django fallback。

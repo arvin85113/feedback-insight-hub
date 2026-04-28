@@ -26,6 +26,7 @@
                         {% else %}
                             <a href="{% url 'feedback:customer-home' %}">顧客端</a>
                             <a href="{% url 'accounts:preferences' %}">通知偏好</a>
+                            <a href="{% url 'accounts:profile' %}">資料設定</a>
                         {% endif %}
                         <form method="post" action="{% url 'accounts:logout' %}">
                             {% csrf_token %}
@@ -41,7 +42,7 @@
 
         <main class="shell-wrap site-main">
             {% if messages %}
-                <section class="flash-stack">
+                <section class="flash-stack" aria-live="polite" aria-label="操作通知">
                     {% for message in messages %}
                         <div class="flash-message">{{ message }}</div>
                     {% endfor %}
@@ -50,5 +51,6 @@
             {% block content %}{% endblock %}
         </main>
     {% endblock %}
+{% block extra_js %}{% endblock %}
 </body>
 </html>

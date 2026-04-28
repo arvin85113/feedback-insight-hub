@@ -20,6 +20,16 @@ class User(Base):
     is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class SurveyCategory(Base):
+    __tablename__ = "feedback_surveycategory"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime)
+
+    surveys: Mapped[list["Survey"]] = relationship(back_populates="category")
+
+
 class Survey(Base):
     __tablename__ = "feedback_survey"
 
@@ -27,13 +37,14 @@ class Survey(Base):
     title: Mapped[str] = mapped_column(String(255))
     slug: Mapped[str] = mapped_column(String(50), unique=True)
     description: Mapped[str] = mapped_column(Text)
-    access_mode: Mapped[str] = mapped_column(String(20))
+    category_id: Mapped[int | None] = mapped_column(ForeignKey("feedback_surveycategory.id"), nullable=True)
     thank_you_email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     improvement_tracking_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime)
     updated_at: Mapped[DateTime] = mapped_column(DateTime)
 
+    category: Mapped["SurveyCategory | None"] = relationship(back_populates="surveys")
     questions: Mapped[list["Question"]] = relationship(order_by="Question.order", back_populates="survey")
     submissions: Mapped[list["FeedbackSubmission"]] = relationship(back_populates="survey")
     improvements: Mapped[list["ImprovementUpdate"]] = relationship(back_populates="survey")
@@ -64,7 +75,6 @@ class FeedbackSubmission(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("accounts_user.id"), nullable=True)
     respondent_name: Mapped[str] = mapped_column(String(120))
     respondent_email: Mapped[str] = mapped_column(String(254))
-    source: Mapped[str] = mapped_column(String(20))
     consent_follow_up: Mapped[bool] = mapped_column(Boolean, default=False)
     submitted_at: Mapped[DateTime] = mapped_column(DateTime)
 
