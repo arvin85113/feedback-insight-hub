@@ -3,12 +3,12 @@ from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, TemplateView
+from django.views.generic import CreateView, DetailView, TemplateView, View
 
 from .forms import (
     ImprovementUpdateForm,
@@ -101,6 +101,18 @@ class CustomerNotificationsView(CustomerRequiredMixin, TemplateView):
         context.update(service_client.get_customer_notifications(self.request.user))
         context["notification_opt_in"] = self.request.user.notification_opt_in
         return context
+
+
+class MarkNoticeReadView(CustomerRequiredMixin, View):
+    def post(self, request, pk):
+        dispatch = get_object_or_404(
+            ImprovementDispatch,
+            pk=pk,
+            submission__user=request.user,
+        )
+        dispatch.is_read = True
+        dispatch.save(update_fields=["is_read"])
+        return redirect("feedback:customer-notifications")
 
 
 class DashboardView(DashboardBaseMixin, TemplateView):
@@ -248,7 +260,28 @@ class NoticeCenterView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        context["notices"] = ImprovementUpdate.objects.select_related("survey").all()
+        context["notices"] = (
+            ImprovementUpdate.objects.select_related("survey")
+            .annotate(dispatch_count=Count("dispatches"))
+            .order_by("-created_at")
+        )
+        return context
+
+
+class NoticeDetailView(DashboardBaseMixin, DetailView):
+    template_name = "feedback/notice_detail.html"
+    model = ImprovementUpdate
+    context_object_name = "improvement"
+    active_section = "feedback:notice-center"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_dashboard_base_context())
+        context["dispatches"] = (
+            self.object.dispatches
+            .select_related("submission__user", "submission__survey")
+            .order_by("-sent_at")
+        )
         return context
 
 

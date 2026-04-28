@@ -19,7 +19,7 @@
         {% for notice in notices %}
             <div class="record-row record-row-stack">
                 <div>
-                    <strong>{{ notice.title }}</strong>
+                    <a href="{% url 'feedback:notice-detail' notice.pk %}"><strong>{{ notice.title }}</strong></a>
                     <p>{{ notice.survey.title }}</p>
                     <p>{{ notice.summary|truncatechars:180 }}</p>
                 </div>
@@ -27,6 +27,7 @@
                     <span class="pill {% if notice.emailed_at %}pill-active{% endif %}">
                         {% if notice.emailed_at %}已寄送{% else %}草稿中{% endif %}
                     </span>
+                    <p class="muted-text">已通知 {{ notice.dispatch_count }} 人</p>
                     <p class="muted-text">{{ notice.created_at|date:"Y/m/d H:i" }}</p>
                 </div>
             </div>
