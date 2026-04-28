@@ -4,7 +4,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.mail import send_mail
-from django.db.models import Q
+from django.db.models import Count, Q
 import segno
 
 from django.http import HttpResponse, HttpResponseRedirect
@@ -308,6 +308,12 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
+        context["stats_survey_rows"] = (
+            Survey.objects.filter(is_active=True)
+            .select_related("category")
+            .annotate(question_count=Count("questions"), response_count=Count("submissions"))
+            .order_by("title")
+        )
         payload = service_client.get_stats(selected_slug) if selected_slug else {"charts": [], "question_analysis": [], "inferential_analysis": []}
         context["charts"] = payload.get("charts", [])
         context["question_analysis"] = payload.get("question_analysis", [])

@@ -984,6 +984,26 @@ ul.errorlist {
     font-weight: 700;
 }
 
+.stats-list-toolbar {
+    align-items: flex-end;
+}
+
+.stats-list-toolbar h2 {
+    margin: 2px 0 0;
+}
+
+.stats-survey-list-panel .record-row-link {
+    flex: 1;
+}
+
+.stats-survey-row {
+    align-items: center;
+}
+
+.stats-empty-guide {
+    margin-top: -8px;
+}
+
 .insight-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }

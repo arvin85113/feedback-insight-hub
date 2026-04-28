@@ -247,11 +247,50 @@
         </div>
     </section>
 {% else %}
-    <section class="manager-panel">
+    <section class="manager-toolbar stats-list-toolbar">
+        <div>
+            <p class="section-kicker">Survey Analytics Index</p>
+            <h2>選擇一份問卷開始分析</h2>
+        </div>
+    </section>
+
+    <section class="manager-panel stats-survey-list-panel">
+        <div class="record-list">
+            {% for survey in stats_survey_rows %}
+                <div class="record-row record-row-stack stats-survey-row">
+                    <a class="record-row-link" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">
+                        <div>
+                            <strong>{{ survey.title }}</strong>
+                            {% if survey.category %}
+                                <span class="pill pill-category">{{ survey.category.name }}</span>
+                            {% endif %}
+                            <p>{{ survey.description|default:"尚未補充問卷說明。" }}</p>
+                            <p>{{ survey.question_count }} 題 | {{ survey.response_count }} 份回覆</p>
+                        </div>
+                    </a>
+                    <div class="record-meta">
+                        <span class="pill {% if survey.response_count %}pill-active{% endif %}">
+                            {% if survey.response_count %}可分析{% else %}等待回覆{% endif %}
+                        </span>
+                        <a class="button button-primary button-small" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">查看統計</a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無可分析問卷</h3>
+                        <p>請先建立問卷並收集回覆，之後即可在這裡進入統計分析頁。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="manager-panel stats-empty-guide">
         <div class="empty-card">
             <div>
-                <h3>請先選擇問卷</h3>
-                <p>選擇問卷後，系統會依照題型與資料型態，自動整理描述統計與可用的推論統計方法。</p>
+                <h3>統計頁會做什麼？</h3>
+                <p>進入單一問卷後，系統會依照題型與資料型態，自動整理描述統計、推薦可用推論方法，並顯示條件通過或跳過原因。</p>
             </div>
         </div>
     </section>
