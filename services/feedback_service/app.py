@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from feedback.text_pipeline import ANALYSIS_VERSION, build_analysis_text, estimate_sentiment_score, tokenize_feedback
 
-from .analysis import DATA_TYPE_LABELS, access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
+from .analysis import DATA_TYPE_LABELS, build_dashboard_insights, summarize_keywords, summarize_numeric
 from .db import session_scope
 from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, User
 

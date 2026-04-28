@@ -3,10 +3,6 @@ from statistics import mean
 from feedback.text_pipeline import keyword_counts
 
 
-ACCESS_MODE_LABELS = {
-    "login": "登入後填答",
-}
-
 DATA_TYPE_LABELS = {
     "nominal": "名目",
     "ordinal": "順序",
@@ -14,9 +10,6 @@ DATA_TYPE_LABELS = {
     "continuous": "連續",
     "text": "文字",
 }
-
-def access_mode_label(value: str) -> str:
-    return ACCESS_MODE_LABELS.get(value, value)
 
 
 def summarize_keywords(answer_values: list[str], category_map: dict[str, str] | None = None) -> list[dict]:
