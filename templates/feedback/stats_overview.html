@@ -42,6 +42,14 @@
             <span>推論組合</span>
             <strong>{{ inferential_analysis|length }}</strong>
         </article>
+        <article class="kpi-chip">
+            <span>可執行推論</span>
+            <strong>{{ available_tests_count }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>條件未通過</span>
+            <strong>{{ skipped_tests_count }}</strong>
+        </article>
     </section>
 
     <section class="analytics-workbench">
@@ -138,11 +146,14 @@
                             </div>
                         {% endif %}
                     {% else %}
-                        <div class="analytics-frequency-list">
+                        <div class="bar-chart">
                             {% for row in chart.counts %}
-                                <div class="analytics-frequency-item">
-                                    <span>{{ row.value }}</span>
-                                    <strong>{{ row.total }}{% if row.percent is not None %}（{{ row.percent }}%）{% endif %}</strong>
+                                <div class="bar-row">
+                                    <span class="bar-label">{{ row.value }}</span>
+                                    <div class="bar-track">
+                                        <div class="bar-fill" style="width: {{ row.percent|default:0 }}%"></div>
+                                    </div>
+                                    <strong class="bar-value">{{ row.total }}{% if row.percent is not None %}（{{ row.percent }}%）{% endif %}</strong>
                                 </div>
                             {% endfor %}
                         </div>
@@ -190,11 +201,11 @@
                     </div>
                     <div class="analytics-result-grid">
                         {% for result in family.list %}
-                            <article class="analytics-result-card {% if result.skipped_reason %}analytics-result-muted{% endif %}">
+                            <article class="analytics-result-card inference-card {% if result.skipped_reason %}analytics-result-muted inference-card-skipped{% endif %}">
                                 <div class="analytics-result-head">
                                     <strong>{{ result.iv_title }} × {{ result.dv_title }}</strong>
                                     {% if result.skipped_reason %}
-                                        <span class="analysis-badge method-skipped">條件未通過</span>
+                                        <span class="analysis-badge method-skipped badge-skipped">條件未通過</span>
                                     {% else %}
                                         <span class="analysis-badge method-ready">已執行</span>
                                     {% endif %}

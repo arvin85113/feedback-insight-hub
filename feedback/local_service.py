@@ -695,7 +695,13 @@ def get_survey_pandas_stats(survey):
 def get_stats_payload(slug):
     survey = Survey.objects.filter(slug=slug).first() if slug else None
     if not survey:
-        return {"charts": [], "question_analysis": [], "inferential_analysis": []}
+        return {
+            "charts": [],
+            "question_analysis": [],
+            "inferential_analysis": [],
+            "available_tests_count": 0,
+            "skipped_tests_count": 0,
+        }
 
     question_signature = tuple(
         Question.objects.filter(survey=survey)
@@ -709,6 +715,8 @@ def get_stats_payload(slug):
         return cached_payload
 
     pandas_stats = get_survey_pandas_stats(survey)
+    available_tests_count = sum(1 for item in pandas_stats["inferential_analysis"] if not item.get("skipped_reason"))
+    skipped_tests_count = sum(1 for item in pandas_stats["inferential_analysis"] if item.get("skipped_reason"))
     payload = {
         "charts": pandas_stats["charts"] or chart_summary(survey),
         "question_analysis": [
@@ -720,6 +728,8 @@ def get_stats_payload(slug):
             for question in survey.questions.all()
         ],
         "inferential_analysis": pandas_stats["inferential_analysis"],
+        "available_tests_count": available_tests_count,
+        "skipped_tests_count": skipped_tests_count,
     }
     if len(_STATS_PAYLOAD_CACHE) >= _STATS_PAYLOAD_CACHE_MAX_SIZE:
         _STATS_PAYLOAD_CACHE.clear()

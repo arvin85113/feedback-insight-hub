@@ -932,6 +932,11 @@ ul.errorlist {
     color: #8a5f00;
 }
 
+.badge-skipped {
+    background: rgba(26, 53, 84, 0.08);
+    color: var(--muted);
+}
+
 .analytics-metric-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -986,12 +991,59 @@ ul.errorlist {
     background: rgba(255, 248, 230, 0.65);
 }
 
+.inference-card-skipped {
+    background: rgba(26, 53, 84, 0.045);
+    border-left: 4px solid #d08a2a;
+}
+
 .analytics-skip-reason,
 .analytics-warning {
     padding: 10px 12px;
     border-radius: 12px;
     background: rgba(176, 122, 0, 0.1);
     color: #7a5800 !important;
+}
+
+.bar-chart {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: minmax(84px, 0.85fr) minmax(120px, 2fr) auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.bar-label {
+    color: var(--ink);
+    font-weight: 800;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(26, 53, 84, 0.08);
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    min-width: 4px;
+    border-radius: inherit;
+    background: var(--brand);
+}
+
+.bar-value {
+    color: var(--muted);
+    font-size: 0.82rem;
+    white-space: nowrap;
 }
 
 .analytics-insight {

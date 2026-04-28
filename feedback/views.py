@@ -366,6 +366,8 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         context["charts"] = payload.get("charts", [])
         context["question_analysis"] = payload.get("question_analysis", [])
         context["inferential_analysis"] = payload.get("inferential_analysis", [])
+        context["available_tests_count"] = payload.get("available_tests_count", 0)
+        context["skipped_tests_count"] = payload.get("skipped_tests_count", 0)
         return context
 
 
