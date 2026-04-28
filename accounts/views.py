@@ -5,7 +5,9 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
-from .forms import CustomerPreferenceForm, CustomerSignUpForm, LoginForm
+from feedback.models import FeedbackSubmission, SurveyCategory
+
+from .forms import CustomerPreferenceForm, CustomerProfileForm, CustomerSignUpForm, LoginForm
 
 
 class PlatformLoginView(LoginView):
@@ -38,12 +40,87 @@ def customer_preferences_view(request):
         return redirect("feedback:dashboard")
 
     if request.method == "POST":
-        form = CustomerPreferenceForm(request.POST, instance=request.user)
+        action = request.POST.get("action")
+        if action == "toggle-global":
+            form = CustomerPreferenceForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "全域通知偏好已更新。")
+                return redirect("accounts:preferences")
+        elif action == "toggle-survey":
+            survey_id = request.POST.get("survey_id")
+            enabled = request.POST.get("enabled") == "on"
+            updated = FeedbackSubmission.objects.filter(user=request.user, survey_id=survey_id).update(
+                consent_follow_up=enabled
+            )
+            if updated:
+                state = "開啟" if enabled else "關閉"
+                messages.success(request, f"此問卷的後續通知已{state}。")
+            return redirect("accounts:preferences")
+
+    form = CustomerPreferenceForm(instance=request.user)
+    sort = request.GET.get("sort", "newest")
+    category_id = request.GET.get("category", "")
+
+    submissions = (
+        FeedbackSubmission.objects.filter(user=request.user)
+        .select_related("survey", "survey__category")
+        .order_by("-submitted_at")
+    )
+    survey_rows_by_id = {}
+    for submission in submissions:
+        row = survey_rows_by_id.setdefault(
+            submission.survey_id,
+            {
+                "survey": submission.survey,
+                "latest_submission": submission,
+                "submission_count": 0,
+                "consent_follow_up": False,
+            },
+        )
+        row["submission_count"] += 1
+        row["consent_follow_up"] = row["consent_follow_up"] or submission.consent_follow_up
+        if submission.submitted_at > row["latest_submission"].submitted_at:
+            row["latest_submission"] = submission
+
+    survey_rows = list(survey_rows_by_id.values())
+    if category_id:
+        survey_rows = [
+            row for row in survey_rows
+            if row["survey"].category_id and str(row["survey"].category_id) == category_id
+        ]
+    if sort == "oldest":
+        survey_rows.sort(key=lambda row: row["latest_submission"].submitted_at)
+    elif sort == "title":
+        survey_rows.sort(key=lambda row: row["survey"].title)
+    else:
+        survey_rows.sort(key=lambda row: row["latest_submission"].submitted_at, reverse=True)
+
+    return render(
+        request,
+        "accounts/preferences.html",
+        {
+            "form": form,
+            "survey_rows": survey_rows,
+            "categories": SurveyCategory.objects.all(),
+            "current_category": category_id,
+            "current_sort": sort,
+        },
+    )
+
+
+@login_required
+def customer_profile_view(request):
+    if request.user.is_manager:
+        return redirect("feedback:dashboard")
+
+    if request.method == "POST":
+        form = CustomerProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, "通知偏好與個人資料已更新。")
-            return redirect("accounts:preferences")
+            messages.success(request, "個人資料已更新。")
+            return redirect("accounts:profile")
     else:
-        form = CustomerPreferenceForm(instance=request.user)
+        form = CustomerProfileForm(instance=request.user)
 
-    return render(request, "accounts/preferences.html", {"form": form})
+    return render(request, "accounts/profile.html", {"form": form})

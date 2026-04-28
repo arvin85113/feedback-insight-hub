@@ -5,12 +5,46 @@ from flask import Flask, jsonify, request
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from .analysis import DATA_TYPE_LABELS, access_mode_label, build_dashboard_insights, summarize_keywords, summarize_numeric
+from feedback.text_pipeline import ANALYSIS_VERSION, build_analysis_text, estimate_sentiment_score, tokenize_feedback
+
+from .analysis import DATA_TYPE_LABELS, build_dashboard_insights, summarize_keywords, summarize_numeric
 from .db import session_scope
 from .models import Answer, FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, User
 
 
 app = Flask(__name__)
+
+
+def build_category_sentiments(answer_rows, category_map):
+    bucket = {}
+    for row in answer_rows:
+        tokens = tokenize_feedback(row.analysis_text or row.value or "")
+        if not tokens:
+            continue
+        categories = {category_map.get(token, "未分類") for token in tokens}
+        for category in categories:
+            entry = bucket.setdefault(
+                category,
+                {"category": category, "positive": 0, "neutral": 0, "negative": 0, "total": 0},
+            )
+            entry["total"] += 1
+            if row.sentiment_score is None:
+                entry["neutral"] += 1
+            elif row.sentiment_score > 0.1:
+                entry["positive"] += 1
+            elif row.sentiment_score < -0.1:
+                entry["negative"] += 1
+            else:
+                entry["neutral"] += 1
+    return sorted(bucket.values(), key=lambda item: item["total"], reverse=True)
+
+
+def format_payload_date(value: datetime) -> str:
+    return f"{value.year}/{value.month}/{value.day}"
+
+
+def format_payload_datetime(value: datetime) -> str:
+    return f"{format_payload_date(value)} {value:%H:%M}"
 
 
 def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
@@ -19,8 +53,6 @@ def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
         "title": survey.title,
         "slug": survey.slug,
         "description": survey.description,
-        "access_mode": survey.access_mode,
-        "access_mode_display": access_mode_label(survey.access_mode),
         "improvement_tracking_enabled": survey.improvement_tracking_enabled,
         "thank_you_email_enabled": survey.thank_you_email_enabled,
         "questions": {"count": len(survey.questions)},
@@ -32,9 +64,12 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
     display_name = submission.respondent_name
     if not display_name and submission.user:
         display_name = f"{submission.user.first_name} {submission.user.last_name}".strip() or submission.user.username
+    category = submission.survey.category
     return {
         "id": submission.id,
         "submitted_at": submission.submitted_at.isoformat(),
+        "submitted_date": format_payload_date(submission.submitted_at),
+        "submitted_datetime": format_payload_datetime(submission.submitted_at),
         "consent_follow_up": submission.consent_follow_up,
         "respondent_email": submission.respondent_email,
         "display_name": display_name or "匿名填答者",
@@ -42,6 +77,7 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
             "id": submission.survey.id,
             "title": submission.survey.title,
             "slug": submission.survey.slug,
+            "category": {"id": category.id, "name": category.name} if category else None,
         },
         "answers": {"count": answer_count if answer_count is not None else len(submission.answers)},
     }
@@ -66,6 +102,18 @@ def serialize_notice(dispatch: ImprovementDispatch) -> dict:
             "summary": dispatch.improvement.summary,
         },
     }
+
+
+def build_submission_preview(submission: FeedbackSubmission) -> str:
+    answers = sorted(submission.answers, key=lambda answer: (answer.question.order, answer.question.id))
+    for answer in answers:
+        value = (answer.value or "").strip()
+        if not value:
+            continue
+        if len(value) > 42:
+            value = f"{value[:42]}..."
+        return f"{answer.question.title}：{value}"
+    return ""
 
 
 @app.get("/health")
@@ -111,7 +159,11 @@ def customer_home(user_id: int):
 
         submissions = session.scalars(
             select(FeedbackSubmission)
-            .options(joinedload(FeedbackSubmission.survey), joinedload(FeedbackSubmission.user), joinedload(FeedbackSubmission.answers))
+            .options(
+                joinedload(FeedbackSubmission.survey).joinedload(Survey.category),
+                joinedload(FeedbackSubmission.user),
+                joinedload(FeedbackSubmission.answers).joinedload(Answer.question),
+            )
             .where(FeedbackSubmission.user_id == user_id)
             .order_by(FeedbackSubmission.submitted_at.desc())
         ).unique().all()
@@ -133,6 +185,7 @@ def customer_home(user_id: int):
                 {
                     "submission": serialize_submission(submission, len(submission.answers)),
                     "answer_count": len(submission.answers),
+                    "answer_preview": build_submission_preview(submission),
                     "latest_notice": serialize_notice(latest_notice) if latest_notice else None,
                 }
             )
@@ -274,7 +327,7 @@ def dashboard():
                 "action_items": [
                     {
                         "title": "建立新問卷",
-                        "meta": "新增題組、設定填答模式與通知規則。",
+                        "meta": "新增題組、整理題目流程與通知規則。",
                         "url": "/dashboard/forms/new/",
                         "url_label": "開始建立",
                     },
@@ -337,11 +390,17 @@ def stats():
                 )
 
             if question.data_type == "continuous":
-                analysis = "適合進一步做平均數比較、趨勢檢視，或延伸到 t 檢定與 ANOVA。"
-            elif question.data_type in {"nominal", "ordinal"}:
-                analysis = "適合以比例分布、交叉分析與卡方檢定檢查不同群體間差異。"
+                analysis = "適合做平均數、標準差與趨勢檢視；若搭配名目分組題，可延伸到 t 檢定與 ANOVA。"
+            elif question.data_type == "discrete":
+                analysis = "適合做計數型數值摘要，例如總數、平均次數與分布；第一版不自動進入 t 檢定或 ANOVA。"
+            elif question.data_type == "nominal":
+                analysis = "適合做比例分布與交叉分析；單選名目題可作為推論統計的分組變數。"
+            elif question.data_type == "ordinal":
+                analysis = "適合做次數、比例與排序分布；因間距不一定相等，第一版不進入 t 檢定或 ANOVA。"
+            elif question.data_type == "text":
+                analysis = "適合做關鍵字、情緒傾向與主題聚類，提取具體改善線索。"
             else:
-                analysis = "適合做文字主題、情緒與關鍵字分析，萃取顧客原聲。"
+                analysis = "建議先確認資料尺度，再選擇描述統計或推論統計方法。"
 
             question_analysis.append(
                 {
@@ -367,10 +426,27 @@ def text_analysis():
                 select(Question).where(Question.survey_id == survey.id, Question.enable_keyword_tracking.is_(True))
             ).all()
         ]
-        values = session.scalars(select(Answer.value).where(Answer.question_id.in_(question_ids))).all() if question_ids else []
+        answer_rows = (
+            session.execute(
+                select(Answer.analysis_text, Answer.value, Answer.sentiment_score).where(Answer.question_id.in_(question_ids))
+            ).all()
+            if question_ids
+            else []
+        )
+        values = [row.analysis_text or row.value for row in answer_rows if (row.analysis_text or row.value)]
+        sentiment_values = [row.sentiment_score for row in answer_rows if row.sentiment_score is not None]
         category_rows = session.scalars(select(KeywordCategory).where(KeywordCategory.survey_id == survey.id)).all()
         category_map = {row.keyword: row.category for row in category_rows}
-        return jsonify({"keywords": summarize_keywords(values, category_map)})
+        summary = {
+            "total_answers": len(answer_rows),
+            "analyzed_answers": sum(1 for row in answer_rows if row.analysis_text),
+            "analysis_coverage": round(sum(1 for row in answer_rows if row.analysis_text) / len(answer_rows), 3)
+            if answer_rows
+            else 0,
+            "avg_sentiment_score": round(sum(sentiment_values) / len(sentiment_values), 3) if sentiment_values else None,
+        }
+        category_sentiments = build_category_sentiments(answer_rows, category_map)
+        return jsonify({"keywords": summarize_keywords(values, category_map), "summary": summary, "category_sentiments": category_sentiments})
 
 
 @app.post("/api/surveys/<slug>/submissions")
@@ -386,7 +462,6 @@ def create_submission(slug: str):
             user_id=payload.get("user_id"),
             respondent_name=payload.get("respondent_name", ""),
             respondent_email=payload.get("respondent_email", ""),
-            source=payload.get("source", "login"),
             consent_follow_up=bool(payload.get("consent_follow_up", False)),
             submitted_at=datetime.now(),
         )
@@ -402,7 +477,22 @@ def create_submission(slug: str):
             value = answers[key]
             if isinstance(value, list):
                 value = ", ".join(value)
-            session.add(Answer(submission_id=submission.id, question_id=question.id, value=str(value)))
+            analysis_text = None
+            analysis_version = None
+            if question.kind in {"short_text", "long_text"}:
+                analysis_text = build_analysis_text(value)
+                analysis_version = ANALYSIS_VERSION if analysis_text else None
+            sentiment_score = estimate_sentiment_score(value) if analysis_text else None
+            session.add(
+                Answer(
+                    submission_id=submission.id,
+                    question_id=question.id,
+                    value=str(value),
+                    analysis_text=analysis_text,
+                    sentiment_score=sentiment_score,
+                    analysis_version=analysis_version,
+                )
+            )
 
         return jsonify(
             {

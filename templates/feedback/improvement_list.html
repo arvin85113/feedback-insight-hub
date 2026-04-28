@@ -3,153 +3,199 @@
 {% block title %}改善追蹤 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="manager-header">
+<section class="manager-header manager-header-inline analytics-hero">
     <div>
-        <p class="section-kicker">Improvements</p>
+        <p class="section-kicker">Improvement Workflow</p>
         <h1>改善追蹤</h1>
-        <p>展開問卷查看現有改善項目，或直接在同頁新增通知。</p>
+        <p>依問卷集中查看改善項目，並針對同一份問卷建立改善通知。</p>
     </div>
-</section>
-
-<section class="manager-panel">
-    {% if survey_groups %}
-        <div class="accordion-list">
-            {% for group in survey_groups %}
-            <div class="accordion-item" id="accordion-{{ group.survey.id }}">
-                <button
-                    class="accordion-trigger"
-                    aria-expanded="false"
-                    aria-controls="accordion-body-{{ group.survey.id }}"
-                    onclick="toggleAccordion(this)"
-                    type="button"
-                >
-                    <span class="accordion-label">
-                        <strong>{{ group.survey.title }}</strong>
-                        <span class="muted-text">{{ group.improvements|length }} 則改善項目</span>
-                    </span>
-                    <span class="accordion-chevron" aria-hidden="true">▾</span>
-                </button>
-
-                <div class="accordion-body" id="accordion-body-{{ group.survey.id }}" hidden>
-
-                    {% if group.improvements %}
-                        <ul class="improvement-item-list">
-                            {% for item in group.improvements %}
-                            <li class="improvement-item">
-                                <div class="improvement-item-main">
-                                    <strong>{{ item.title }}</strong>
-                                    <p class="muted-text">{{ item.summary|truncatechars:160 }}</p>
-                                </div>
-                                <div class="improvement-item-meta">
-                                    <span class="pill {% if item.emailed_at %}pill-active{% endif %}">
-                                        {% if item.emailed_at %}已通知{% else %}尚未通知{% endif %}
-                                    </span>
-                                    <p class="muted-text">{{ item.created_at|date:"Y/m/d" }}</p>
-                                </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="muted-text accordion-empty">這份問卷目前沒有改善項目。</p>
-                    {% endif %}
-
-                    <div class="inline-form-zone" id="form-zone-{{ group.survey.id }}">
-                        <button
-                            class="button button-ghost button-small"
-                            type="button"
-                            onclick="toggleInlineForm('form-zone-{{ group.survey.id }}')"
-                            id="form-toggle-{{ group.survey.id }}"
-                        >
-                            ＋ 新增改善通知
-                        </button>
-
-                        <form
-                            class="inline-improvement-form"
-                            id="inline-form-{{ group.survey.id }}"
-                            method="post"
-                            action="{{ group.create_url }}"
-                            hidden
-                        >
-                            {% csrf_token %}
-                            <div class="field-block">
-                                <label for="id_title_{{ group.survey.id }}">改善主題</label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    id="id_title_{{ group.survey.id }}"
-                                    maxlength="255"
-                                    required
-                                >
-                            </div>
-                            <div class="field-block">
-                                <label for="id_summary_{{ group.survey.id }}">改善摘要</label>
-                                <textarea
-                                    name="summary"
-                                    id="id_summary_{{ group.survey.id }}"
-                                    rows="3"
-                                    required
-                                ></textarea>
-                            </div>
-                            <div class="field-block">
-                                <label for="id_related_category_{{ group.survey.id }}">對應分類（選填）</label>
-                                <input
-                                    type="text"
-                                    name="related_category"
-                                    id="id_related_category_{{ group.survey.id }}"
-                                    maxlength="100"
-                                >
-                            </div>
-                            <div class="field-block field-block-checkbox">
-                                <label>
-                                    <input type="checkbox" name="send_global_notice" checked>
-                                    寄送給符合條件的填答者
-                                </label>
-                            </div>
-                            <div class="inline-form-actions">
-                                <button type="submit" class="button button-primary button-small">建立改善通知</button>
-                                <button
-                                    type="button"
-                                    class="button button-ghost button-small"
-                                    onclick="toggleInlineForm('form-zone-{{ group.survey.id }}')"
-                                >取消</button>
-                            </div>
-                        </form>
-                    </div>
-
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-card">
-            <div>
-                <h3>尚無問卷</h3>
-                <p>請先建立問卷，才能新增改善追蹤項目。</p>
-            </div>
-        </div>
+    {% if selected_survey %}
+        <a class="button button-ghost" href="{% url 'feedback:improvement-list' %}">返回問卷列表</a>
     {% endif %}
 </section>
 
-<script>
-function toggleAccordion(trigger) {
-    const expanded = trigger.getAttribute('aria-expanded') === 'true';
-    const bodyId = trigger.getAttribute('aria-controls');
-    const body = document.getElementById(bodyId);
-    trigger.setAttribute('aria-expanded', String(!expanded));
-    if (expanded) {
-        body.hidden = true;
-    } else {
-        body.hidden = false;
-    }
-}
+{% if selected_survey %}
+    <section class="kpi-strip analytics-kpi-strip">
+        <article class="kpi-chip">
+            <span>追蹤問卷</span>
+            <strong>{{ selected_survey.title }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>改善項目</span>
+            <strong>{{ selected_improvements|length }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>改善通知</span>
+            <strong>{% if selected_survey.improvement_tracking_enabled %}已啟用{% else %}未啟用{% endif %}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>問卷狀態</span>
+            <strong>{% if selected_survey.is_active %}開放中{% else %}已停用{% endif %}</strong>
+        </article>
+    </section>
 
-function toggleInlineForm(zoneId) {
-    const zone = document.getElementById(zoneId);
-    const form = zone.querySelector('.inline-improvement-form');
-    const toggleBtn = zone.querySelector('button[onclick^="toggleInlineForm"]');
-    const isHidden = form.hidden;
-    form.hidden = !isHidden;
-    toggleBtn.textContent = isHidden ? '✕ 取消新增' : '＋ 新增改善通知';
-}
-</script>
+    <section class="manager-panel improvement-tracking-control">
+        <form method="post" class="tracking-toggle-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle-tracking">
+            <input type="hidden" name="survey_id" value="{{ selected_survey.id }}">
+            <label class="toggle-label">
+                <span class="toggle-wrapper">
+                    <input type="checkbox" name="enabled" {% if selected_survey.improvement_tracking_enabled %}checked{% endif %} onchange="this.form.submit()">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </span>
+                <span class="toggle-text">
+                    <span class="toggle-title">改善追蹤開關</span>
+                    <span class="toggle-desc">
+                        {% if selected_survey.improvement_tracking_enabled %}
+                            已啟用，可建立改善通知並回推給符合條件的填答者。
+                        {% else %}
+                            已停用，僅保留既有改善項目檢視，暫停新增通知。
+                        {% endif %}
+                    </span>
+                </span>
+            </label>
+        </form>
+    </section>
+
+    <section class="manager-content-grid analytics-grid">
+        <article class="manager-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="section-kicker">Improvement Items</p>
+                    <h2>既有改善項目</h2>
+                </div>
+            </div>
+            <div class="record-list">
+                {% for item in selected_improvements %}
+                    <div class="record-row record-row-stack">
+                        <div>
+                            <strong>{{ item.title }}</strong>
+                            <p>{{ item.summary|truncatechars:180 }}</p>
+                            {% if item.related_category %}
+                                <p>對應分類：{{ item.related_category }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="record-meta">
+                            <span class="pill {% if item.emailed_at %}pill-active{% endif %}">
+                                {% if item.emailed_at %}已通知{% else %}尚未通知{% endif %}
+                            </span>
+                            <p class="muted-text">{{ item.created_at|date:"Y/m/d" }}</p>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-card">
+                        <div>
+                            <h3>這份問卷目前沒有改善項目</h3>
+                            <p>可在右側建立第一則改善通知，讓顧客知道團隊已採取行動。</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="manager-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="section-kicker">Create Update</p>
+                    <h2>新增改善通知</h2>
+                </div>
+            </div>
+            {% if selected_survey.improvement_tracking_enabled %}
+                <form method="post" action="{{ create_url }}" class="form-stack">
+                    {% csrf_token %}
+                    <div class="field-block">
+                        <label for="id_title_{{ selected_survey.id }}">改善主題</label>
+                        <input type="text" name="title" id="id_title_{{ selected_survey.id }}" maxlength="255" required>
+                    </div>
+                    <div class="field-block">
+                        <label for="id_summary_{{ selected_survey.id }}">改善摘要</label>
+                        <textarea name="summary" id="id_summary_{{ selected_survey.id }}" rows="5" required></textarea>
+                    </div>
+                    <div class="field-block">
+                        <label for="id_related_category_{{ selected_survey.id }}">對應分類（選填）</label>
+                        <input type="text" name="related_category" id="id_related_category_{{ selected_survey.id }}" maxlength="100">
+                        <p class="muted-text">可填入文字洞察或選項分類，系統會優先通知相關回覆者。</p>
+                    </div>
+                    <div class="field-block field-block-checkbox">
+                        <label>
+                            <input type="checkbox" name="send_global_notice" checked>
+                            寄送給符合條件的填答者
+                        </label>
+                    </div>
+                    <button type="submit" class="button button-primary">建立改善通知</button>
+                </form>
+            {% else %}
+                <div class="empty-card">
+                    <div>
+                        <h3>改善追蹤已停用</h3>
+                        <p>啟用上方開關後，才可以建立新的改善通知。</p>
+                    </div>
+                </div>
+            {% endif %}
+        </article>
+    </section>
+{% else %}
+    <section class="manager-toolbar stats-list-toolbar">
+        <div class="toolbar-filters">
+            <a class="filter-pill {% if not current_category %}filter-pill-active{% endif %}"
+               href="?sort={{ current_sort }}">全部</a>
+            {% for cat in categories %}
+                <a class="filter-pill {% if current_category == cat.id|stringformat:'s' %}filter-pill-active{% endif %}"
+                   href="?sort={{ current_sort }}&category={{ cat.id }}">{{ cat.name }}</a>
+            {% endfor %}
+        </div>
+        <div class="toolbar-sort">
+            <select class="sort-select" onchange="location.href=this.value">
+                <option value="?sort=newest{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'newest' %}selected{% endif %}>最新建立</option>
+                <option value="?sort=oldest{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'oldest' %}selected{% endif %}>最舊建立</option>
+                <option value="?sort=title{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'title' %}selected{% endif %}>名稱 A-Z</option>
+            </select>
+        </div>
+    </section>
+
+    <section class="manager-panel stats-survey-list-panel">
+        <div class="record-list">
+            {% for survey in improvement_survey_rows %}
+                <div class="record-row record-row-stack stats-survey-row">
+                    <a class="record-row-link" href="{% url 'feedback:improvement-list' %}?survey={{ survey.slug }}">
+                        <div>
+                            <strong>{{ survey.title }}</strong>
+                            {% if survey.category %}
+                                <span class="pill pill-category">{{ survey.category.name }}</span>
+                            {% endif %}
+                            <p>{{ survey.description|default:"尚未填寫問卷說明。" }}</p>
+                            <p>{{ survey.improvement_count }} 則改善 | {{ survey.response_count }} 份回覆</p>
+                        </div>
+                    </a>
+                    <div class="record-meta">
+                        <span class="pill {% if survey.improvement_tracking_enabled %}pill-active{% endif %}">
+                            {% if survey.improvement_tracking_enabled %}追蹤中{% else %}未啟用{% endif %}
+                        </span>
+                        <a class="button button-primary button-small" href="{% url 'feedback:improvement-list' %}?survey={{ survey.slug }}">查看追蹤</a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無可追蹤的問卷</h3>
+                        <p>請先建立問卷，收集回覆後即可新增改善項目並同步通知顧客。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="manager-panel stats-empty-guide">
+        <div class="empty-card">
+            <div>
+                <h3>改善追蹤會做什麼？</h3>
+                <p>進入單一問卷後，可查看既有改善項目，並建立改善通知回推給符合條件的填答者。</p>
+            </div>
+        </div>
+    </section>
+{% endif %}
 {% endblock %}

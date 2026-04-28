@@ -3,107 +3,309 @@
 {% block title %}統計分析 | FeedBack IQ{% endblock %}
 
 {% block dashboard_content %}
-<section class="manager-header manager-header-inline">
+<section class="manager-header manager-header-inline analytics-hero">
     <div>
-        <p class="section-kicker">Analytics</p>
+        <p class="section-kicker">Analytics Workflow</p>
         <h1>統計分析</h1>
-        <p>快速檢視每個題目的資料型態、分析建議與基礎分布，作為決策前的第一層閱讀面板。</p>
+        <p>依照問卷題型與資料型態，自動整理描述統計、推薦可用檢定，並顯示執行結果或跳過原因。</p>
     </div>
-    <form method="get" class="form-stack manager-filter-form">
-        <div class="field-block">
-            <label for="stats-survey">選擇問卷</label>
-            <select id="stats-survey" name="survey" onchange="this.form.submit()">
-                <option value="">請選擇分析對象</option>
-                {% for survey in survey_list %}
-                    <option value="{{ survey.slug }}" {% if selected_survey and selected_survey.slug == survey.slug %}selected{% endif %}>{{ survey.title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </form>
+    {% if selected_survey %}
+        <a class="button button-ghost" href="{% url 'feedback:stats-overview' %}">返回問卷列表</a>
+    {% endif %}
 </section>
 
 {% if selected_survey %}
-    <section class="kpi-strip">
+    <section class="analytics-flow-strip" aria-label="統計分析流程">
+        <span class="flow-step flow-step-active">1. 選擇問卷</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step flow-step-active">2. 讀取題型與資料型態</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step flow-step-active">3. 推薦可用方法</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step flow-step-active">4. 檢查條件並輸出解釋</span>
+    </section>
+
+    <section class="kpi-strip analytics-kpi-strip">
         <article class="kpi-chip">
             <span>分析問卷</span>
             <strong>{{ selected_survey.title }}</strong>
         </article>
         <article class="kpi-chip">
-            <span>題目數量</span>
+            <span>題目數</span>
             <strong>{{ question_analysis|length }}</strong>
         </article>
         <article class="kpi-chip">
-            <span>可用圖表摘要</span>
+            <span>描述統計</span>
             <strong>{{ charts|length }}</strong>
         </article>
+        <article class="kpi-chip">
+            <span>推論組合</span>
+            <strong>{{ inferential_analysis|length }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>可執行推論</span>
+            <strong>{{ available_tests_count }}</strong>
+        </article>
+        <article class="kpi-chip">
+            <span>條件未通過</span>
+            <strong>{{ skipped_tests_count }}</strong>
+        </article>
     </section>
 
-    <section class="manager-content-grid analytics-grid">
-        <article class="manager-panel">
+    <section class="analytics-workbench">
+        <article class="manager-panel analytics-map-panel">
             <div class="panel-head">
-                <h2>題目分析建議</h2>
+                <div>
+                    <p class="section-kicker">Data Map</p>
+                    <h2>題目資料地圖</h2>
+                </div>
             </div>
-            <div class="record-list">
+            <p class="analytics-panel-note">系統會根據每題的資料型態判斷它適合作為描述統計、分組變數、結果變數，或交給文字洞察。</p>
+            <div class="analytics-question-map">
                 {% for item in question_analysis %}
-                    <div class="record-row record-row-stack">
-                        <div>
+                    <article class="analytics-question-card">
+                        <div class="analytics-question-head">
                             <strong>{{ item.title }}</strong>
-                            <p>{{ item.data_type }}</p>
-                            <p>{{ item.analysis }}</p>
+                            <span class="analysis-badge">{{ item.data_type }}</span>
                         </div>
-                    </div>
+                        <p>{{ item.analysis }}</p>
+                    </article>
                 {% empty %}
                     <div class="empty-card">
                         <div>
-                            <h3>目前沒有可分析題目</h3>
-                            <p>先建立題目並收集回覆，再回到這裡查看統計摘要。</p>
+                            <h3>尚無題目可分析</h3>
+                            <p>請先在問卷管理中新增題目，並完成資料型態標註。</p>
                         </div>
                     </div>
                 {% endfor %}
             </div>
         </article>
 
-        <article class="manager-panel">
+        <article class="manager-panel analytics-method-panel">
             <div class="panel-head">
-                <h2>分布摘要</h2>
+                <div>
+                    <p class="section-kicker">Method Router</p>
+                    <h2>系統如何選方法</h2>
+                </div>
             </div>
-            <div class="record-list">
-                {% for chart in charts %}
-                    <div class="record-row record-row-stack">
-                        <div>
-                            <strong>{{ chart.question.title }}</strong>
-                            {% if chart.type == "numeric" %}
-                                <ul class="feature-list compact-list">
-                                    <li>有效樣本：{{ chart.count }}</li>
-                                    <li>平均值：{{ chart.avg }}</li>
-                                    <li>最小 / 最大：{{ chart.min }} / {{ chart.max }}</li>
-                                </ul>
-                            {% else %}
-                                <ul class="feature-list compact-list">
-                                    {% for row in chart.counts %}
-                                        <li>{{ row.value }}：{{ row.total }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% empty %}
-                    <div class="empty-card">
-                        <div>
-                            <h3>尚未產生分布資料</h3>
-                            <p>當問卷收到回覆後，這裡會顯示數值與選項分布。</p>
-                        </div>
-                    </div>
-                {% endfor %}
+            <div class="method-router-grid">
+                <article class="method-router-card">
+                    <span class="analysis-badge method-descriptive">描述統計</span>
+                    <strong>單一題目摘要</strong>
+                    <p>連續 / 離散題產生平均、標準差與信賴區間；類別題產生次數與百分比。</p>
+                </article>
+                <article class="method-router-card">
+                    <span class="analysis-badge method-mean">平均數比較</span>
+                    <strong>名目分組 × 連續結果</strong>
+                    <p>2 組跑 Welch t-test，3-5 組跑單因子 ANOVA，並附上效果量。</p>
+                </article>
+                <article class="method-router-card">
+                    <span class="analysis-badge method-category">類別關聯</span>
+                    <strong>名目 × 名目</strong>
+                    <p>單選名目題之間跑卡方檢定；多選題只做多重回應頻率，不當分組。</p>
+                </article>
+                <article class="method-router-card">
+                    <span class="analysis-badge method-rank">順序 / 相關</span>
+                    <strong>排序與關聯</strong>
+                    <p>名目 × 順序跑非母數檢定；連續 × 連續跑 Pearson，涉及順序資料跑 Spearman。</p>
+                </article>
             </div>
         </article>
+    </section>
+
+    <section class="manager-panel analytics-section-panel">
+        <div class="panel-head">
+            <div>
+                <p class="section-kicker">Descriptive Statistics</p>
+                <h2>描述統計結果</h2>
+            </div>
+        </div>
+        <div class="analytics-result-grid">
+            {% for chart in charts %}
+                <article class="analytics-result-card">
+                    <div class="analytics-result-head">
+                        <strong>{{ chart.question.title }}</strong>
+                        <span class="analysis-badge method-descriptive">描述統計</span>
+                    </div>
+                    {% if chart.type == "numeric" %}
+                        <dl class="analytics-metric-list">
+                            <div><dt>有效樣本</dt><dd>{{ chart.count }}</dd></div>
+                            <div><dt>平均值</dt><dd>{{ chart.avg }}</dd></div>
+                            <div><dt>中位數</dt><dd>{{ chart.median }}</dd></div>
+                            <div><dt>標準差</dt><dd>{{ chart.std }}</dd></div>
+                            <div><dt>最小 / 最大</dt><dd>{{ chart.min }} / {{ chart.max }}</dd></div>
+                            {% if chart.ci_low is not None and chart.ci_high is not None %}
+                                <div><dt>95% 信賴區間</dt><dd>{{ chart.ci_low }} ~ {{ chart.ci_high }}</dd></div>
+                            {% endif %}
+                        </dl>
+                        {% if chart.counts %}
+                            <div class="analytics-frequency-row">
+                                {% for row in chart.counts %}
+                                    <span>{{ row.value }}：{{ row.total }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="bar-chart">
+                            {% for row in chart.counts %}
+                                <div class="bar-row">
+                                    <span class="bar-label">{{ row.value }}</span>
+                                    <div class="bar-track">
+                                        <div class="bar-fill" style="width: {{ row.percent|default:0 }}%"></div>
+                                    </div>
+                                    <strong class="bar-value">{{ row.total }}{% if row.percent is not None %}（{{ row.percent }}%）{% endif %}</strong>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </article>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無可用的描述統計</h3>
+                        <p>請先收集回覆，或確認題目已標註資料型態。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="manager-panel analytics-section-panel">
+        <div class="panel-head">
+            <div>
+                <p class="section-kicker">Inferential Analysis</p>
+                <h2>推論統計推薦與結果</h2>
+            </div>
+        </div>
+        {% regroup inferential_analysis by analysis_family as analysis_groups %}
+        <div class="analytics-inference-list">
+            {% for family in analysis_groups %}
+                <section class="analytics-family-block">
+                    <div class="analytics-family-head">
+                        {% if family.grouper == "mean_comparison" %}
+                            <span class="analysis-badge method-mean">平均數比較</span>
+                            <strong>t-test / ANOVA</strong>
+                        {% elif family.grouper == "categorical_association" %}
+                            <span class="analysis-badge method-category">類別關聯</span>
+                            <strong>卡方檢定</strong>
+                        {% elif family.grouper == "nonparametric_rank" %}
+                            <span class="analysis-badge method-rank">順序資料比較</span>
+                            <strong>Mann-Whitney / Kruskal-Wallis</strong>
+                        {% elif family.grouper == "correlation" %}
+                            <span class="analysis-badge method-correlation">相關分析</span>
+                            <strong>Pearson / Spearman</strong>
+                        {% else %}
+                            <span class="analysis-badge">其他分析</span>
+                            <strong>條件檢查</strong>
+                        {% endif %}
+                    </div>
+                    <div class="analytics-result-grid">
+                        {% for result in family.list %}
+                            <article class="analytics-result-card inference-card {% if result.skipped_reason %}analytics-result-muted inference-card-skipped{% endif %}">
+                                <div class="analytics-result-head">
+                                    <strong>{{ result.iv_title }} × {{ result.dv_title }}</strong>
+                                    {% if result.skipped_reason %}
+                                        <span class="analysis-badge method-skipped badge-skipped">條件未通過</span>
+                                    {% else %}
+                                        <span class="analysis-badge method-ready">已執行</span>
+                                    {% endif %}
+                                </div>
+                                {% if result.skipped_reason %}
+                                    <p class="analytics-skip-reason">{{ result.skipped_reason }}</p>
+                                {% else %}
+                                    <dl class="analytics-metric-list">
+                                        <div><dt>方法</dt><dd>{{ result.test_name }}</dd></div>
+                                        <div><dt>統計量</dt><dd>{{ result.statistic }}</dd></div>
+                                        <div><dt>p-value</dt><dd>{{ result.p_value }}</dd></div>
+                                        {% if result.effect_size is not None %}
+                                            <div><dt>{{ result.effect_label }}</dt><dd>{{ result.effect_size }}</dd></div>
+                                        {% endif %}
+                                    </dl>
+                                    <p class="analytics-insight">{{ result.insight }}</p>
+                                    {% if result.warning %}
+                                        <p class="analytics-warning">{{ result.warning }}</p>
+                                    {% endif %}
+                                    {% if result.groups %}
+                                        <div class="analytics-frequency-row">
+                                            {% for group in result.groups %}
+                                                <span>{{ group.value }}：{{ group.count }} 筆{% if group.avg is not None %}，摘要 {{ group.avg }}{% endif %}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無可用推論統計</h3>
+                        <p>需要至少一題可作為分組或配對的題目，以及足夠回覆數，系統才會產生檢定結果。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     </section>
 {% else %}
-    <section class="manager-panel">
+    <section class="manager-toolbar stats-list-toolbar">
+        <div class="toolbar-filters">
+            <a class="filter-pill {% if not current_category %}filter-pill-active{% endif %}"
+               href="?sort={{ current_sort }}">全部</a>
+            {% for cat in categories %}
+                <a class="filter-pill {% if current_category == cat.id|stringformat:'s' %}filter-pill-active{% endif %}"
+                   href="?sort={{ current_sort }}&category={{ cat.id }}">{{ cat.name }}</a>
+            {% endfor %}
+        </div>
+        <div class="toolbar-sort">
+            <select class="sort-select" onchange="location.href=this.value">
+                <option value="?sort=newest{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'newest' %}selected{% endif %}>最新建立</option>
+                <option value="?sort=oldest{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'oldest' %}selected{% endif %}>最舊建立</option>
+                <option value="?sort=title{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'title' %}selected{% endif %}>名稱 A-Z</option>
+            </select>
+        </div>
+    </section>
+
+    <section class="manager-panel stats-survey-list-panel">
+        <div class="record-list">
+            {% for survey in stats_survey_rows %}
+                <div class="record-row record-row-stack stats-survey-row">
+                    <a class="record-row-link" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">
+                        <div>
+                            <strong>{{ survey.title }}</strong>
+                            {% if survey.category %}
+                                <span class="pill pill-category">{{ survey.category.name }}</span>
+                            {% endif %}
+                            <p>{{ survey.description|default:"尚未補充問卷說明。" }}</p>
+                            <p>{{ survey.question_count }} 題 | {{ survey.response_count }} 份回覆</p>
+                        </div>
+                    </a>
+                    <div class="record-meta">
+                        <span class="pill {% if survey.response_count %}pill-active{% endif %}">
+                            {% if survey.response_count %}可分析{% else %}等待回覆{% endif %}
+                        </span>
+                        <a class="button button-primary button-small" href="{% url 'feedback:stats-overview' %}?survey={{ survey.slug }}">查看統計</a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-card">
+                    <div>
+                        <h3>尚無可分析問卷</h3>
+                        <p>請先建立問卷並收集回覆，之後即可在這裡進入統計分析頁。</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="manager-panel stats-empty-guide">
         <div class="empty-card">
             <div>
-                <h3>先選擇一份問卷</h3>
-                <p>從上方下拉選單指定問卷後，即可查看對應的統計分析與圖表摘要。</p>
+                <h3>統計頁會做什麼？</h3>
+                <p>進入單一問卷後，系統會依照題型與資料型態，自動整理描述統計、推薦可用推論方法，並顯示條件通過或跳過原因。</p>
             </div>
         </div>
     </section>

@@ -8,6 +8,7 @@ from .models import (
     KeywordCategory,
     Question,
     Survey,
+    SurveyCategory,
 )
 
 
@@ -16,17 +17,29 @@ class QuestionInline(admin.TabularInline):
     extra = 1
 
 
+@admin.register(SurveyCategory)
+class SurveyCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "created_at")
+
+
 @admin.register(Survey)
 class SurveyAdmin(admin.ModelAdmin):
-    list_display = ("title", "slug", "access_mode", "is_active", "updated_at")
+    list_display = ("title", "slug", "is_active", "updated_at")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [QuestionInline]
+    readonly_fields = ("improvement_tracking_enabled",)
+    fields = (
+        "title", "slug", "description",
+        "category",
+        "thank_you_email_enabled", "is_active",
+        "improvement_tracking_enabled",
+    )
 
 
 @admin.register(FeedbackSubmission)
 class FeedbackSubmissionAdmin(admin.ModelAdmin):
-    list_display = ("survey", "display_name", "respondent_email", "source", "submitted_at")
-    list_filter = ("survey", "source", "consent_follow_up")
+    list_display = ("survey", "display_name", "respondent_email", "submitted_at")
+    list_filter = ("survey", "consent_follow_up")
 
 
 @admin.register(Answer)

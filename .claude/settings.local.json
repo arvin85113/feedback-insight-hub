@@ -1,7 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(claude mcp *)"
+      "Bash(claude mcp *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(.venv/Scripts/python.exe manage.py shell -c \"from feedback.models import Survey; qs = Survey.objects.filter\\(improvement_tracking_enabled=False\\); print\\(f'Count: {qs.count\\(\\)}'\\); [print\\(f'  id={s.id} slug={s.slug}'\\) for s in qs]\")",
+      "Bash(py --version)",
+      "Bash(python3 manage.py shell -c \"from feedback.models import Survey; qs = Survey.objects.filter\\(improvement_tracking_enabled=False\\); print\\(f'Count: {qs.count\\(\\)}'\\); [print\\(f'  id={s.id} slug={s.slug}'\\) for s in qs]\")",
+      "Bash(python3 -m pip install python-dotenv==1.0.1 -q)",
+      "Bash(python3 manage.py migrate)",
+      "Bash(python manage.py runserver)",
+      "Bash(sed -n '138,227p' \"C:\\\\Users\\\\Lai Hsiang Yu\\\\OneDrive\\\\Desktop\\\\Project\\\\templates\\\\feedback\\\\survey_builder.html\")",
+      "Read(//tmp/**)",
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import segno; print\\('segno ok:', segno.__version__\\)\")",
+      "Bash(python -m pip install segno==1.6.1 -q)",
+      "Bash(python manage.py check)",
+      "Bash(python scripts/seed_demo_data.py)"
     ]
   }
 }

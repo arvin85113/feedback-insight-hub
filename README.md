@@ -45,7 +45,7 @@ python manage.py ensure_superuser
 python manage.py seed_demo
 ```
 
-3. 啟動 Flask 微服務
+3. 可選：啟動 Flask 微服務
 
 ```bash
 python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 5001
@@ -57,8 +57,15 @@ python -m flask --app services.feedback_service.app run --host 127.0.0.1 --port 
 python manage.py runserver
 ```
 
-若未設定 `FEEDBACK_SERVICE_URL`，Django 會退回本地 provider，方便單機開發；設定後則會優先呼叫 Flask 微服務。
-若 Flask 微服務暫時不可用，Django 會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
+目前所有問卷都採登入後填答，沒有匿名或快速填答模式。
+若未設定 `FEEDBACK_SERVICE_URL`，Django 會直接使用本地 provider，適合目前的 Django-only 開發或部署方式。
+若設定 `FEEDBACK_SERVICE_URL`，Django 會優先呼叫 Flask 微服務；Flask 暫時不可用時，Django 仍會在短 timeout 後自動退回本地 provider，並在冷卻期間避免重複等待。
+
+## 共用測試基準資料
+
+- 問卷 mock 資料放在 `feedback/fixtures/beverage_survey_mock_100.csv`。
+- 此檔案用於團隊共用測試、整合驗證與展示，不是正式營運資料。
+- 請勿放入真實個資；若更新內容，請在 PR 說明欄位、筆數或分布變更。
 
 ## 重要環境變數
 
@@ -81,3 +88,24 @@ FEEDBACK_SERVICE_FAILURE_COOLDOWN=30
 - `feedback-domain-service`: Flask 私有服務
 
 Django 透過內網 URL 呼叫 Flask 服務；兩者共用同一份 `DATABASE_URL`。
+
+## Schema Migration 協作流程
+
+此專案的 Django 與 Flask 共用同一個資料庫，請遵循以下流程避免協作環境故障：
+
+1. 只用 Django migration 變更 schema，避免在 Supabase Dashboard 手動改欄位。
+2. 新欄位先採 `null=True`（或安全預設值），先確保舊資料可相容。
+3. 變更後同步更新 `services/feedback_service/models.py` 的 SQLAlchemy 欄位定義。
+4. 部署順序建議為：先部署可相容新舊 schema 的程式碼，再執行 `python manage.py migrate`。
+
+本次已新增 `feedback_answer.analysis_text`、`feedback_answer.sentiment_score`、`feedback_answer.analysis_version`，對應 migration：`feedback/migrations/0007_answer_analysis_text_answer_analysis_version_and_more.py`。
+
+歷史資料回填指令：
+
+```bash
+python manage.py rebuild_text_analysis --dry-run
+python manage.py rebuild_text_analysis
+python manage.py rebuild_text_analysis --survey <survey-slug>
+```
+
+若只部署 Django，請不要設定 `FEEDBACK_SERVICE_URL`，系統會直接走 Django fallback。

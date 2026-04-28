@@ -13,6 +13,7 @@
         </p>
     </div>
     <div class="portal-actions">
+        <a class="button button-ghost" href="{% url 'accounts:profile' %}">資料設定</a>
         <a class="button button-ghost" href="{% url 'accounts:preferences' %}">通知偏好</a>
         <a class="button button-primary" href="{% url 'feedback:customer-notifications' %}">查看通知紀錄</a>
     </div>
@@ -38,7 +39,7 @@
         <div class="card-topline">
             <h2>我的帳戶摘要</h2>
             <span class="pill {% if user.notification_opt_in %}pill-active{% endif %}">
-                {% if user.notification_opt_in %}願意接收更新{% else %}不接收更新{% endif %}
+                {% if user.notification_opt_in %}願意接收更新{% else %}暫不接收更新{% endif %}
             </span>
         </div>
         <div class="summary-grid">
@@ -58,7 +59,7 @@
                 <span class="info-label">最近一次填答</span>
                 <strong>
                     {% if latest_submission %}
-                        {{ latest_submission.submitted_at|date:"Y/m/d" }}
+                        {{ latest_submission.submitted_date }}
                     {% else %}
                         尚未填答
                     {% endif %}
@@ -105,22 +106,39 @@
 
 <section class="portal-grid portal-grid-wide">
     <article class="surface-card">
-        <div class="card-topline">
-            <h2>填答紀錄</h2>
-            <span class="muted-text">最近 8 筆</span>
+        <div class="card-topline customer-record-head">
+            <div>
+                <h2>填答紀錄</h2>
+                <p class="muted-text">最近 8 筆</p>
+            </div>
+            <nav class="customer-record-tabs" aria-label="填答紀錄篩選">
+                <a class="filter-pill {% if active_submission_status == 'all' %}filter-pill-active{% endif %}"
+                   href="{% url 'feedback:customer-home' %}">全部 {{ submission_status_counts.all }}</a>
+                <a class="filter-pill {% if active_submission_status == 'pending' %}filter-pill-active{% endif %}"
+                   href="{% url 'feedback:customer-home' %}?status=pending">待處理 {{ submission_status_counts.pending }}</a>
+                <a class="filter-pill {% if active_submission_status == 'tracking' %}filter-pill-active{% endif %}"
+                   href="{% url 'feedback:customer-home' %}?status=tracking">願意追蹤 {{ submission_status_counts.tracking }}</a>
+                <a class="filter-pill {% if active_submission_status == 'improved' %}filter-pill-active{% endif %}"
+                   href="{% url 'feedback:customer-home' %}?status=improved">已促成改善 {{ submission_status_counts.improved }}</a>
+            </nav>
         </div>
         <div class="record-list">
             {% for row in submission_rows %}
-                <div class="record-row record-row-stack">
+                <div class="record-row record-row-stack customer-submission-row">
                     <div>
-                        <strong>{{ row.submission.survey.title }}</strong>
-                        <p>{{ row.submission.submitted_at|date:"Y/m/d H:i" }} 提交</p>
-                        <p>{{ row.answer_count }} 題已作答</p>
+                        <div class="customer-row-title">
+                            <strong>{{ row.submission.survey.title }}</strong>
+                            {% if row.submission.survey.category %}
+                                <span class="pill pill-category">{{ row.submission.survey.category.name }}</span>
+                            {% endif %}
+                        </div>
+                        <p>{{ row.answer_count }} 題已作答，提交時間：{{ row.submission.submitted_date }}</p>
+                        {% if row.latest_notice %}
+                            <p class="panel-note">最新改善：{{ row.latest_notice.improvement.title }}</p>
+                        {% endif %}
                     </div>
                     <div class="record-meta">
-                        <span class="pill {% if row.submission.consent_follow_up %}pill-active{% endif %}">
-                            {% if row.submission.consent_follow_up %}願意接收追蹤{% else %}不接收追蹤{% endif %}
-                        </span>
+                        <span class="pill {{ row.status_class }}">{{ row.status_label }}</span>
                         {% if row.latest_notice %}
                             <p class="muted-text">最近通知 {{ row.latest_notice.sent_at|date:"Y/m/d" }}</p>
                         {% endif %}
@@ -129,8 +147,8 @@
             {% empty %}
                 <div class="empty-card">
                     <div>
-                        <h3>目前沒有填答紀錄</h3>
-                        <p>你完成問卷後，這裡會整理你的作答時間、題數與後續通知狀態。</p>
+                        <h3>沒有符合條件的填答紀錄</h3>
+                        <p>可切回「全部」查看所有已提交問卷。</p>
                     </div>
                 </div>
             {% endfor %}

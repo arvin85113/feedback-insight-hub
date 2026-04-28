@@ -1,11 +1,7 @@
-from collections import Counter
-import re
 from statistics import mean
 
+from feedback.text_pipeline import keyword_counts
 
-ACCESS_MODE_LABELS = {
-    "login": "登入後填答",
-}
 
 DATA_TYPE_LABELS = {
     "nominal": "名目",
@@ -15,31 +11,9 @@ DATA_TYPE_LABELS = {
     "text": "文字",
 }
 
-STOP_WORDS = {
-    "我們",
-    "你們",
-    "這個",
-    "那個",
-    "非常",
-    "feedback",
-    "問卷",
-    "改善",
-}
-
-
-def access_mode_label(value: str) -> str:
-    return ACCESS_MODE_LABELS.get(value, value)
-
-
-def tokenize_feedback(text: str) -> list[str]:
-    tokens = re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", (text or "").lower())
-    return [token for token in tokens if token not in STOP_WORDS]
-
 
 def summarize_keywords(answer_values: list[str], category_map: dict[str, str] | None = None) -> list[dict]:
-    counts = Counter()
-    for value in answer_values:
-        counts.update(tokenize_feedback(value))
+    counts = keyword_counts(answer_values)
     category_map = category_map or {}
     return [
         {"keyword": word, "count": count, "category": category_map.get(word, "未分類")}
