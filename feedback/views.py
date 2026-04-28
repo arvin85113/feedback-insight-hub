@@ -305,15 +305,30 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         selected_slug = self.request.GET.get("survey")
+        sort = self.request.GET.get("sort", "title")
+        category_id = self.request.GET.get("category", "")
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        context["stats_survey_rows"] = (
+        stats_surveys = (
             Survey.objects.filter(is_active=True)
             .select_related("category")
             .annotate(question_count=Count("questions"), response_count=Count("submissions"))
-            .order_by("title")
         )
+        if category_id:
+            stats_surveys = stats_surveys.filter(category_id=category_id)
+        if sort == "responses":
+            stats_surveys = stats_surveys.order_by("-response_count", "title")
+        elif sort == "questions":
+            stats_surveys = stats_surveys.order_by("-question_count", "title")
+        elif sort == "newest":
+            stats_surveys = stats_surveys.order_by("-created_at")
+        else:
+            stats_surveys = stats_surveys.order_by("title")
+        context["stats_survey_rows"] = stats_surveys
+        context["categories"] = SurveyCategory.objects.all()
+        context["current_sort"] = sort
+        context["current_category"] = category_id
         payload = service_client.get_stats(selected_slug) if selected_slug else {"charts": [], "question_analysis": [], "inferential_analysis": []}
         context["charts"] = payload.get("charts", [])
         context["question_analysis"] = payload.get("question_analysis", [])
