@@ -9,7 +9,7 @@
         <h1>問卷管理</h1>
         <p>集中查看所有問卷的題目數、回覆量、啟用狀態與分類，並快速進入問卷編輯與檢視頁。</p>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;">
+    <div class="manager-header-actions">
         <button type="button" class="button button-ghost" id="category-panel-toggle">管理分類</button>
         <a class="button button-primary" href="{% url 'feedback:survey-create' %}">建立新問卷</a>
     </div>
@@ -40,7 +40,7 @@
     </div>
 </div>
 
-<section class="manager-toolbar">
+<section class="manager-toolbar survey-manager-toolbar">
     <div class="toolbar-filters">
         <a class="filter-pill {% if not current_category %}filter-pill-active{% endif %}"
            href="?sort={{ current_sort }}">全部</a>
@@ -61,10 +61,10 @@
     </div>
 </section>
 
-<section class="manager-panel">
+<section class="manager-panel survey-manager-panel">
     <div class="record-list">
         {% for survey in surveys %}
-            <div class="record-row record-row-stack">
+            <div class="record-row record-row-stack survey-manager-row">
                 <a class="record-row-link" href="{% url 'feedback:survey-builder' survey.slug %}">
                     <div>
                         <strong>{{ survey.title }}</strong>
@@ -75,24 +75,24 @@
                         <p>{{ survey.questions.count }} 題 | {{ survey.submissions.count }} 份回覆</p>
                     </div>
                 </a>
-                <div class="record-meta">
+                <div class="record-meta survey-manager-meta">
                     <span class="pill {% if survey.is_active %}pill-active{% endif %}">
                         {% if survey.is_active %}已啟用{% else %}草稿中{% endif %}
                     </span>
                     <div class="survey-link-group">
-                        <button type="button" class="button button-ghost button-small copy-survey-link"
-                                data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'feedback:survey-detail' survey.slug %}">
-                            複製連結
-                        </button>
                         <div class="qr-popover-wrapper">
-                            <button type="button" class="button button-ghost button-small qr-trigger" aria-label="QR Code">
-                                QR
+                            <button type="button" class="button button-ghost button-small qr-trigger" aria-label="QR Code" aria-expanded="false">
+                                QRcode
                             </button>
-                            <div class="qr-popover">
+                            <div class="qr-popover" hidden>
                                 <img src="{% url 'feedback:survey-qrcode' survey.slug %}"
                                      alt="{{ survey.title }} QR Code" width="160" height="160">
                             </div>
                         </div>
+                        <button type="button" class="button button-ghost button-small copy-survey-link"
+                                data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'feedback:survey-detail' survey.slug %}">
+                            複製連結
+                        </button>
                     </div>
                     <form method="post" action="{% url 'feedback:survey-delete' survey.slug %}"
                           onsubmit="return confirm('確定要刪除「{{ survey.title }}」？此操作無法復原。')">
@@ -128,22 +128,43 @@ document.querySelectorAll('.copy-survey-link').forEach(function(btn) {
     });
 });
 
+function closeQrPopovers(exceptWrapper) {
+    document.querySelectorAll('.qr-popover-wrapper').forEach(function(wrapper) {
+        if (wrapper === exceptWrapper) return;
+        wrapper.classList.remove('open');
+        var popover = wrapper.querySelector('.qr-popover');
+        var trigger = wrapper.querySelector('.qr-trigger');
+        if (popover) popover.hidden = true;
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    });
+}
+
 document.querySelectorAll('.qr-trigger').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
+        e.preventDefault();
         e.stopPropagation();
         var wrapper = btn.closest('.qr-popover-wrapper');
-        var isOpen = wrapper.classList.contains('open');
-        document.querySelectorAll('.qr-popover-wrapper.open').forEach(function(w) {
-            w.classList.remove('open');
-        });
-        if (!isOpen) { wrapper.classList.add('open'); }
+        var popover = wrapper.querySelector('.qr-popover');
+        var shouldOpen = popover.hidden;
+        closeQrPopovers(wrapper);
+        wrapper.classList.toggle('open', shouldOpen);
+        popover.hidden = !shouldOpen;
+        btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    });
+});
+
+document.querySelectorAll('.qr-popover').forEach(function(popover) {
+    popover.addEventListener('click', function(e) {
+        e.stopPropagation();
     });
 });
 
 document.addEventListener('click', function() {
-    document.querySelectorAll('.qr-popover-wrapper.open').forEach(function(w) {
-        w.classList.remove('open');
-    });
+    closeQrPopovers();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeQrPopovers();
 });
 
 var panelToggle = document.getElementById('category-panel-toggle');

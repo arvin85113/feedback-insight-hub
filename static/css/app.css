@@ -1622,7 +1622,11 @@ input[type="checkbox"] {
 
 /* 分類情緒：紅（負向）/ 黃（中性）/ 綠（正向）比例條 */
 .sentiment-by-category {
- 
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+}
+
 /* ── Setting blocks ── */
 .setting-block {
     display: flex;
@@ -1767,6 +1771,14 @@ input[type="checkbox"] {
 }
 
 /* ── Manager toolbar ── */
+.manager-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
 .manager-toolbar {
     display: flex;
     align-items: center;
@@ -1776,35 +1788,50 @@ input[type="checkbox"] {
     flex-wrap: wrap;
 }
 
+.survey-manager-toolbar {
+    gap: 16px;
+    margin-top: 22px;
+    padding-bottom: 14px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
 .toolbar-filters {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .filter-pill {
-    display: inline-block;
-    padding: 4px 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 13px;
     border-radius: 999px;
     font-size: 0.82rem;
-    font-weight: 500;
+    font-weight: 700;
     color: var(--muted);
-    background: var(--surface-alt, #f6f8fa);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.58);
     text-decoration: none;
-    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .filter-pill:hover {
-    background: var(--border);
-    color: var(--text);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--ink);
 }
 
 .filter-pill-active {
     background: var(--brand);
     color: #fff;
     border-color: var(--brand);
+    box-shadow: 0 10px 22px rgba(190, 92, 42, 0.22);
 }
 
 .filter-pill-active:hover {
@@ -1813,17 +1840,43 @@ input[type="checkbox"] {
 }
 
 .toolbar-sort {
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: auto !important;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .sort-select {
+    width: auto !important;
+    max-width: 140px;
+    min-width: 118px;
+    min-height: 32px;
     font-size: 0.85rem;
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface);
-    color: var(--text);
+    padding: 5px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--ink);
     cursor: pointer;
+}
+
+.survey-manager-panel {
+    padding: 22px 24px;
+}
+
+.survey-manager-row {
+    align-items: center;
+    min-height: 148px;
+}
+
+.survey-manager-row .record-row-link {
+    flex: 1;
+    min-width: 0;
+}
+
+.survey-manager-meta {
+    min-width: 142px;
 }
 
 /* ── Category pill (record row) ── */
@@ -2524,7 +2577,8 @@ input[type="checkbox"] {
 }
 
 /* ── Survey manager: record-meta layout ── */
-.record-meta {
+.survey-manager-meta {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -2535,17 +2589,25 @@ input[type="checkbox"] {
 .survey-link-group {
     display: flex;
     gap: 6px;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .qr-popover-wrapper {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .qr-popover {
     position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    right: calc(100% + 8px);
+    left: auto;
+    bottom: auto;
+    width: 180px;
     background: var(--surface-strong);
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
@@ -2553,6 +2615,10 @@ input[type="checkbox"] {
     box-shadow: var(--shadow);
     display: none;
     z-index: 50;
+}
+
+.qr-popover[hidden] {
+    display: none !important;
 }
 
 .qr-popover-wrapper.open .qr-popover {
