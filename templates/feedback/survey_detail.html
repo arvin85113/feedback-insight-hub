@@ -21,6 +21,11 @@
         </article>
     </div>
 
+    {% if survey_notice %}
+        <article class="survey-card survey-card-accent">
+            <p class="muted-text">{{ survey_notice }}</p>
+        </article>
+    {% else %}
     <form method="post" class="survey-card-stack">
         {% csrf_token %}
         <article class="survey-card survey-card-accent">
@@ -54,5 +59,6 @@
             <button type="submit" class="button button-primary">送出回饋</button>
         </div>
     </form>
+    {% endif %}
 </section>
 {% endblock %}

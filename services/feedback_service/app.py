@@ -342,8 +342,10 @@ def stats():
                 analysis = "適合做比例分布與交叉分析；單選名目題可作為推論統計的分組變數。"
             elif question.data_type == "ordinal":
                 analysis = "適合做次數、比例與排序分布；因間距不一定相等，第一版不進入 t 檢定或 ANOVA。"
+            elif question.data_type == "text":
+                analysis = "適合做關鍵字、情緒傾向與主題聚類，提取具體改善線索。"
             else:
-                analysis = "適合做文字主題、情緒與關鍵字分析，萃取顧客原聲。"
+                analysis = "建議先確認資料尺度，再選擇描述統計或推論統計方法。"
 
             question_analysis.append(
                 {

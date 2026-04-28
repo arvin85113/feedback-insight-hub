@@ -1,6 +1,27 @@
 # 全面健檢報告
 
-> 初次檢查：2026-04-20　|　最後更新：2026-04-27
+> 初次檢查：2026-04-20　|　最後更新：2026-04-28
+
+---
+
+## 2026-04-28 最新協作狀態
+
+### 已完成
+
+| 項目 | 狀態 |
+|---|---|
+| Flask `recommend_analysis` text/fallback 文字對齊 | ✅ `text` 獨立一個 elif，fallback 改為「建議先確認資料尺度」，與 Django 完全一致 |
+| 停用問卷仍可填答 | ✅ `SurveyDetailView.dispatch` 原地渲染 `survey_notice`，不跳首頁 |
+| 空問卷可被提交 | ✅ 同上，`questions.exists()` 失敗也原地渲染 |
+| 重複填答無防護 | ✅ Customer 已填過同一問卷，原地渲染 `survey_notice`；Manager 免檢 |
+| Single choice 改 RadioSelect | ✅ `SurveyFormBuilder._build_field` SINGLE_CHOICE 分支加 `widget=forms.RadioSelect` |
+| Scale widget 與設定脫節 | ✅ 有 `options_text` 時改用 RadioSelect；無選項時 max 收斂為 5 |
+| 通知中心「建立新通知」跳第一份問卷 | ✅ 改為下拉選擇問卷後才啟用按鈕；每筆通知旁加「同問卷新增」捷徑 |
+| `builder_tabs` dead code 清除 | ✅ `SurveyBuilderView.get_context_data` 移除未使用的三 tab 列表 |
+
+### 首頁問卷清單確認
+
+`is_active=True` 過濾已分別在 `local_service.py:71` 和 Flask `app.py:80` 存在，未開放問卷不會出現在首頁 Active Surveys 區塊。
 
 ---
 
@@ -216,8 +237,8 @@ Builder UI 規則：
 
 | 優先 | 問題 | 說明 |
 |---|---|---|
-| ⚠️ 低 | Flask vs Django text 類型建議文字略有出入 | `recommend_analysis` 對 text/其他 type 文字不同，不影響功能 |
 | ⚠️ 低 | `SurveyCategory` 未加入 SQLAlchemy models | Flask 目前不需讀取分類，但若日後 API 要回傳分類資訊需補上 |
+| ⚠️ 低 | 題目無拖曳排序 | 題目順序只能在 inline edit 裡手動填數字，操作繁瑣 |
 
 ---
 

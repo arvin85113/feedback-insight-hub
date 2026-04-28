@@ -22,7 +22,7 @@ from .forms import (
     SurveyEditForm,
     SurveyFormBuilder,
 )
-from .models import ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, SurveyCategory
+from .models import FeedbackSubmission, ImprovementDispatch, ImprovementUpdate, KeywordCategory, Question, Survey, SurveyCategory
 from .service_client import service_client
 
 
@@ -212,11 +212,6 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
         context["survey_edit_form"] = kwargs.get("survey_edit_form") or SurveyEditForm(instance=self.object)
         context["latest_response"] = self.object.submissions.order_by("-submitted_at").first()
         context["active_tab"] = self.request.GET.get("tab", "questions")
-        context["builder_tabs"] = [
-            {"key": "questions", "label": "題目設定"},
-            {"key": "responses", "label": "回覆概況"},
-            {"key": "settings", "label": "問卷設定"},
-        ]
         return context
 
     def post(self, request, *args, **kwargs):
@@ -385,7 +380,15 @@ class NoticeCenterView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        context["notices"] = ImprovementUpdate.objects.select_related("survey").all()
+        notices = ImprovementUpdate.objects.select_related("survey").order_by("-created_at")
+        context["notices"] = [
+            {
+                "obj": n,
+                "create_url": reverse("feedback:improvement-create", args=[n.survey.slug]),
+            }
+            for n in notices
+        ]
+        context["surveys"] = Survey.objects.filter(is_active=True).order_by("title")
         return context
 
 
@@ -401,6 +404,22 @@ class SurveyDetailView(DetailView):
         if not request.user.is_authenticated:
             messages.warning(request, "這份問卷需要先登入後才能填答。")
             return redirect(f"{reverse('accounts:login')}?next={request.path}")
+        if not self.object.is_active:
+            return self.render_to_response(
+                self.get_context_data(survey_notice="這份問卷目前未開放填答。")
+            )
+        if not self.object.questions.exists():
+            return self.render_to_response(
+                self.get_context_data(survey_notice="這份問卷目前沒有任何題目。")
+            )
+        if not request.user.is_manager:
+            already = FeedbackSubmission.objects.filter(
+                survey=self.object, user=request.user
+            ).exists()
+            if already:
+                return self.render_to_response(
+                    self.get_context_data(survey_notice="你已填答過這份問卷。")
+                )
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

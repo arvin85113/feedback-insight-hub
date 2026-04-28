@@ -21,7 +21,11 @@ class SurveyFormBuilder(forms.Form):
         if question.kind == Question.Kind.LONG_TEXT:
             return forms.CharField(widget=forms.Textarea(attrs={"rows": 4}), **common)
         if question.kind == Question.Kind.SINGLE_CHOICE:
-            return forms.ChoiceField(choices=[(option, option) for option in question.options], **common)
+            return forms.ChoiceField(
+                choices=[(option, option) for option in question.options],
+                widget=forms.RadioSelect,
+                **common,
+            )
         if question.kind == Question.Kind.MULTIPLE_CHOICE:
             return forms.MultipleChoiceField(
                 choices=[(option, option) for option in question.options],
@@ -33,7 +37,14 @@ class SurveyFormBuilder(forms.Form):
         if question.kind == Question.Kind.DECIMAL:
             return forms.DecimalField(decimal_places=2, max_digits=10, **common)
         if question.kind == Question.Kind.SCALE:
-            return forms.IntegerField(min_value=1, max_value=10, **common)
+            options = question.options
+            if options:
+                return forms.ChoiceField(
+                    choices=[(o, o) for o in options],
+                    widget=forms.RadioSelect,
+                    **common,
+                )
+            return forms.IntegerField(min_value=1, max_value=5, **common)
         return forms.CharField(**common)
 
 

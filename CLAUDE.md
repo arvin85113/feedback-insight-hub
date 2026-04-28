@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Feedback Insight Hub** — a bilingual (Traditional Chinese / English) feedback and survey management platform. Django handles presentation, authentication, and ORM; a Flask microservice handles the feedback domain with analytics. The two services share the same PostgreSQL database (Supabase in production).
 
-## Current Collaboration Baseline (2026-04-27)
+## Current Collaboration Baseline (2026-04-28)
 
 - The product is now fully login-only. Old quick/hybrid access modes have been removed from UI, admin, runtime payloads, and schema.
 - `Survey.access_mode` and `FeedbackSubmission.source` were removed in migration `feedback/0008_remove_feedbacksubmission_source_and_more.py`.
@@ -124,7 +124,16 @@ Two user roles (`accounts/models.py`): `CUSTOMER` and `MANAGER`. Role-based acce
 
 ### Survey Access
 
-All surveys require login. `Survey.AccessMode`, `Survey.access_mode`, and `FeedbackSubmission.source` have been removed from the active schema. `SurveyDetailView.dispatch` unconditionally redirects unauthenticated users to `/accounts/login/?next=<path>`. There is no anonymous or quick-access mode. The user flow is: scan QR code → redirect to login if not authenticated → fill survey after login.
+All surveys require login. `Survey.AccessMode`, `Survey.access_mode`, and `FeedbackSubmission.source` have been removed from the active schema. There is no anonymous or quick-access mode.
+
+`SurveyDetailView.dispatch` enforces the following checks in order, rendering in-place at the survey URL for all non-auth cases:
+
+1. **Unauthenticated** → redirect to `/accounts/login/?next=<path>` (the only redirect case).
+2. **`survey.is_active == False`** → render survey page with `survey_notice` message; form is hidden.
+3. **No questions** → render survey page with `survey_notice` message; form is hidden.
+4. **Customer already submitted** → render survey page with `survey_notice` message; form is hidden. Managers are exempt from this check.
+
+The user flow is: scan QR code → redirect to login if not authenticated → fill survey after login. Inactive surveys are not listed on the home page (`is_active=True` filter in both `local_service.py` and Flask `app.py`).
 
 ### Survey Create Flow
 
@@ -151,15 +160,14 @@ Admin: `SurveyCategoryAdmin` registered; `improvement_tracking_enabled` is `read
 
 ### Survey Builder
 
-`SurveyBuilderView` (`/dashboard/forms/<slug>/builder/`) has three functional tabs:
+`SurveyBuilderView` (`/dashboard/forms/<slug>/builder/`) has two functional tabs:
 
 | Tab | key | Content |
 |---|---|---|
-| 題目設定 | `questions` | Two-column: question list (with inline edit) + add-question form |
-| 回覆概況 | `responses` | Response count, latest response time, links to stats/text-analysis |
+| 題目設定 | `questions` | Question list (with inline edit) + add-question form |
 | 問卷設定 | `settings` | `SurveyEditForm`: title, category, description, is_active (toggle), thank_you_email_enabled (checkbox), slug (read-only + copy button) |
 
-Tab state is preserved via `?tab=<key>` query param on redirect after POST.
+Response count and latest response time are shown inline in the builder page header, alongside links to stats and text-analysis. Tab state is preserved via `?tab=<key>` query param on redirect after POST.
 
 POST actions (`action` hidden input):
 - `delete-question` — delete a question by `question_id`
@@ -213,6 +221,21 @@ Survey builder UI current state:
 - Text and numeric questions render disabled-looking input/textarea previews.
 - The builder add-question form shows the next question number and a lightweight usage hint when the question kind changes.
 - Manager dashboard pages no longer render the global Django messages banner from `dashboard_base.html`; the frontend `base.html` messages block remains available for non-dashboard pages.
+
+`SurveyFormBuilder` widget rules (actual survey fill form):
+- `single_choice` → `RadioSelect` (previously `<select>`).
+- `multiple_choice` → `CheckboxSelectMultiple` (unchanged).
+- `scale` with `options_text` → `RadioSelect` using those options.
+- `scale` without `options_text` → `IntegerField(min_value=1, max_value=5)`.
+- `short_text` / `long_text` / `integer` / `decimal` → unchanged.
+
+### Notice Center
+
+`/dashboard/notices/` lists all `ImprovementUpdate` records. Each row has a `create_url` pointing to the improvement-create form for that notice's own survey. The page header contains a survey `<select>` dropdown; selecting a survey enables the "建立新通知" button with the correct URL. Each list row also has a "同問卷新增" shortcut link.
+
+`NoticeCenterView.get_context_data` provides:
+- `notices`: list of `{"obj": ImprovementUpdate, "create_url": str}` ordered by `-created_at`.
+- `surveys`: active surveys queryset for the header dropdown.
 
 ### Improvement List Page
 

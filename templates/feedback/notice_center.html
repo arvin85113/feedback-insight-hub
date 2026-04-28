@@ -9,8 +9,16 @@
         <h1>通知中心</h1>
         <p>查看哪些改善更新已對外發布，並用同一個列表掌握通知素材與時間點。</p>
     </div>
-    {% if survey_list %}
-        <a class="button button-primary" href="{% url 'feedback:improvement-create' survey_list.0.slug %}">建立新通知</a>
+    {% if surveys %}
+        <div class="notice-create-group">
+            <select id="notice-survey-select" class="sort-select">
+                <option value="">選擇問卷，建立新通知</option>
+                {% for survey in surveys %}
+                    <option value="{% url 'feedback:improvement-create' survey.slug %}">{{ survey.title }}</option>
+                {% endfor %}
+            </select>
+            <a id="notice-create-btn" class="button button-primary" href="#" style="pointer-events:none;opacity:.45">建立新通知</a>
+        </div>
     {% endif %}
 </section>
 
@@ -19,15 +27,16 @@
         {% for notice in notices %}
             <div class="record-row record-row-stack">
                 <div>
-                    <strong>{{ notice.title }}</strong>
-                    <p>{{ notice.survey.title }}</p>
-                    <p>{{ notice.summary|truncatechars:180 }}</p>
+                    <strong>{{ notice.obj.title }}</strong>
+                    <p>{{ notice.obj.survey.title }}</p>
+                    <p>{{ notice.obj.summary|truncatechars:180 }}</p>
                 </div>
                 <div class="record-meta">
-                    <span class="pill {% if notice.emailed_at %}pill-active{% endif %}">
-                        {% if notice.emailed_at %}已寄送{% else %}草稿中{% endif %}
+                    <span class="pill {% if notice.obj.emailed_at %}pill-active{% endif %}">
+                        {% if notice.obj.emailed_at %}已寄送{% else %}草稿中{% endif %}
                     </span>
-                    <p class="muted-text">{{ notice.created_at|date:"Y/m/d H:i" }}</p>
+                    <p class="muted-text">{{ notice.obj.created_at|date:"Y/m/d H:i" }}</p>
+                    <a class="button button-ghost button-small" href="{{ notice.create_url }}">同問卷新增</a>
                 </div>
             </div>
         {% empty %}
@@ -40,4 +49,24 @@
         {% endfor %}
     </div>
 </section>
+
+<script>
+(function () {
+    var sel = document.getElementById('notice-survey-select');
+    var btn = document.getElementById('notice-create-btn');
+    if (!sel || !btn) return;
+    sel.addEventListener('change', function () {
+        var url = sel.value;
+        if (url) {
+            btn.href = url;
+            btn.style.pointerEvents = '';
+            btn.style.opacity = '';
+        } else {
+            btn.href = '#';
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '.45';
+        }
+    });
+}());
+</script>
 {% endblock %}
