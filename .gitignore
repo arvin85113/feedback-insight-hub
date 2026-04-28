@@ -8,3 +8,15 @@ supabase密碼.txt
 dist/
 build/
 .pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+update-log-*.txt
+scripts/local/
+feedback/management/commands/generate_synthetic_submissions.py
