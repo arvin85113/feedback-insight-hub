@@ -218,6 +218,24 @@ class SurveyBuilderView(DashboardBaseMixin, DetailView):
         self.object = self.get_object()
         action = request.POST.get("action")
 
+        if action == "move-question":
+            question = get_object_or_404(Question, id=request.POST.get("question_id"), survey=self.object)
+            direction = request.POST.get("direction")
+            questions = list(self.object.questions.order_by("order", "id"))
+            idx = next((i for i, q in enumerate(questions) if q.id == question.id), None)
+            if idx is not None:
+                if direction == "up" and idx > 0:
+                    swap = questions[idx - 1]
+                    question.order, swap.order = swap.order, question.order
+                    question.save(update_fields=["order"])
+                    swap.save(update_fields=["order"])
+                elif direction == "down" and idx < len(questions) - 1:
+                    swap = questions[idx + 1]
+                    question.order, swap.order = swap.order, question.order
+                    question.save(update_fields=["order"])
+                    swap.save(update_fields=["order"])
+            return redirect(reverse("feedback:survey-builder", args=[self.object.slug]) + "?tab=questions")
+
         if action == "delete-question":
             question = get_object_or_404(Question, id=request.POST.get("question_id"), survey=self.object)
             question.delete()
@@ -406,11 +424,11 @@ class SurveyDetailView(DetailView):
             return redirect(f"{reverse('accounts:login')}?next={request.path}")
         if not self.object.is_active:
             return self.render_to_response(
-                self.get_context_data(survey_notice="這份問卷目前未開放填答。")
+                self.get_context_data(survey_notice="這份問卷目前未開放填答。", survey_notice_type="error")
             )
         if not self.object.questions.exists():
             return self.render_to_response(
-                self.get_context_data(survey_notice="這份問卷目前沒有任何題目。")
+                self.get_context_data(survey_notice="這份問卷目前沒有任何題目。", survey_notice_type="warning")
             )
         if not request.user.is_manager:
             already = FeedbackSubmission.objects.filter(
@@ -418,7 +436,7 @@ class SurveyDetailView(DetailView):
             ).exists()
             if already:
                 return self.render_to_response(
-                    self.get_context_data(survey_notice="你已填答過這份問卷。")
+                    self.get_context_data(survey_notice="你已填答過這份問卷。", survey_notice_type="info")
                 )
         return super().dispatch(request, *args, **kwargs)
 

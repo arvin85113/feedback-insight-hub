@@ -104,6 +104,13 @@
                         {% if question.enable_keyword_tracking %}
                             <span class="pill">文字分析</span>
                         {% endif %}
+                        <form method="post" class="question-move-group" style="display:inline-flex;gap:2px">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="move-question">
+                            <input type="hidden" name="question_id" value="{{ question.id }}">
+                            <button type="submit" name="direction" value="up" class="button button-ghost button-icon" title="上移">↑</button>
+                            <button type="submit" name="direction" value="down" class="button button-ghost button-icon" title="下移">↓</button>
+                        </form>
                         <button type="button" class="button button-ghost button-small edit-question-btn"
                                 data-question-id="{{ question.id }}">編輯</button>
                         <form method="post" style="display:inline">

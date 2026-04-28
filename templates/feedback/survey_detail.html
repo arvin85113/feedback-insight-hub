@@ -22,8 +22,8 @@
     </div>
 
     {% if survey_notice %}
-        <article class="survey-card survey-card-accent">
-            <p class="muted-text">{{ survey_notice }}</p>
+        <article class="survey-notice survey-notice-{{ survey_notice_type|default:'info' }}">
+            <p>{{ survey_notice }}</p>
         </article>
     {% else %}
     <form method="post" class="survey-card-stack">
