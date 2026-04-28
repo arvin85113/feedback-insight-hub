@@ -20,6 +20,14 @@ _STATS_PAYLOAD_CACHE = {}
 _STATS_PAYLOAD_CACHE_MAX_SIZE = 16
 
 
+def format_payload_date(value):
+    return f"{value.year}/{value.month}/{value.day}"
+
+
+def format_payload_datetime(value):
+    return f"{format_payload_date(value)} {value:%H:%M}"
+
+
 def serialize_survey(survey, response_total=None):
     return {
         "id": survey.id,
@@ -34,9 +42,12 @@ def serialize_survey(survey, response_total=None):
 
 
 def serialize_submission(submission, answer_count=None):
+    category = submission.survey.category
     return {
         "id": submission.id,
         "submitted_at": submission.submitted_at.isoformat(),
+        "submitted_date": format_payload_date(submission.submitted_at),
+        "submitted_datetime": format_payload_datetime(submission.submitted_at),
         "consent_follow_up": submission.consent_follow_up,
         "respondent_email": submission.respondent_email,
         "display_name": submission.display_name,
@@ -44,6 +55,7 @@ def serialize_submission(submission, answer_count=None):
             "id": submission.survey.id,
             "title": submission.survey.title,
             "slug": submission.survey.slug,
+            "category": {"id": category.id, "name": category.name} if category else None,
         },
         "answers": {"count": answer_count if answer_count is not None else submission.answers.count()},
     }
@@ -70,6 +82,21 @@ def serialize_notice(notice):
     }
 
 
+def build_submission_preview(submission):
+    answers = sorted(
+        submission.answers.all(),
+        key=lambda answer: (answer.question.order, answer.question.id),
+    )
+    for answer in answers:
+        value = (answer.value or "").strip()
+        if not value:
+            continue
+        if len(value) > 42:
+            value = f"{value[:42]}..."
+        return f"{answer.question.title}：{value}"
+    return ""
+
+
 def get_home_payload():
     surveys = Survey.objects.filter(is_active=True).prefetch_related("questions", "submissions")
     total_surveys = surveys.count()
@@ -88,8 +115,8 @@ def get_home_payload():
 def get_customer_home_payload(user):
     submissions = list(
         FeedbackSubmission.objects.filter(user=user)
-        .select_related("survey")
-        .prefetch_related("answers")
+        .select_related("survey", "survey__category")
+        .prefetch_related("answers__question")
         .order_by("-submitted_at")
     )
     notices = list(
@@ -109,6 +136,7 @@ def get_customer_home_payload(user):
             {
                 "submission": serialize_submission(submission, answer_count),
                 "answer_count": answer_count,
+                "answer_preview": build_submission_preview(submission),
                 "latest_notice": serialize_notice(related_notice) if related_notice else None,
             }
         )

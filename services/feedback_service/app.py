@@ -13,6 +13,14 @@ from .models import Answer, FeedbackSubmission, ImprovementDispatch, Improvement
 app = Flask(__name__)
 
 
+def format_payload_date(value: datetime) -> str:
+    return f"{value.year}/{value.month}/{value.day}"
+
+
+def format_payload_datetime(value: datetime) -> str:
+    return f"{format_payload_date(value)} {value:%H:%M}"
+
+
 def serialize_survey(survey: Survey, response_total: int | None = None) -> dict:
     return {
         "id": survey.id,
@@ -30,9 +38,12 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
     display_name = submission.respondent_name
     if not display_name and submission.user:
         display_name = f"{submission.user.first_name} {submission.user.last_name}".strip() or submission.user.username
+    category = submission.survey.category
     return {
         "id": submission.id,
         "submitted_at": submission.submitted_at.isoformat(),
+        "submitted_date": format_payload_date(submission.submitted_at),
+        "submitted_datetime": format_payload_datetime(submission.submitted_at),
         "consent_follow_up": submission.consent_follow_up,
         "respondent_email": submission.respondent_email,
         "display_name": display_name or "匿名填答者",
@@ -40,6 +51,7 @@ def serialize_submission(submission: FeedbackSubmission, answer_count: int | Non
             "id": submission.survey.id,
             "title": submission.survey.title,
             "slug": submission.survey.slug,
+            "category": {"id": category.id, "name": category.name} if category else None,
         },
         "answers": {"count": answer_count if answer_count is not None else len(submission.answers)},
     }
@@ -64,6 +76,18 @@ def serialize_notice(dispatch: ImprovementDispatch) -> dict:
             "summary": dispatch.improvement.summary,
         },
     }
+
+
+def build_submission_preview(submission: FeedbackSubmission) -> str:
+    answers = sorted(submission.answers, key=lambda answer: (answer.question.order, answer.question.id))
+    for answer in answers:
+        value = (answer.value or "").strip()
+        if not value:
+            continue
+        if len(value) > 42:
+            value = f"{value[:42]}..."
+        return f"{answer.question.title}：{value}"
+    return ""
 
 
 @app.get("/health")
@@ -109,7 +133,11 @@ def customer_home(user_id: int):
 
         submissions = session.scalars(
             select(FeedbackSubmission)
-            .options(joinedload(FeedbackSubmission.survey), joinedload(FeedbackSubmission.user), joinedload(FeedbackSubmission.answers))
+            .options(
+                joinedload(FeedbackSubmission.survey).joinedload(Survey.category),
+                joinedload(FeedbackSubmission.user),
+                joinedload(FeedbackSubmission.answers).joinedload(Answer.question),
+            )
             .where(FeedbackSubmission.user_id == user_id)
             .order_by(FeedbackSubmission.submitted_at.desc())
         ).unique().all()
@@ -131,6 +159,7 @@ def customer_home(user_id: int):
                 {
                     "submission": serialize_submission(submission, len(submission.answers)),
                     "answer_count": len(submission.answers),
+                    "answer_preview": build_submission_preview(submission),
                     "latest_notice": serialize_notice(latest_notice) if latest_notice else None,
                 }
             )

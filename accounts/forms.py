@@ -28,14 +28,22 @@ class CustomerSignUpForm(UserCreationForm):
         return user
 
 
-class CustomerPreferenceForm(forms.ModelForm):
+class CustomerProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "email", "organization", "notification_opt_in")
+        fields = ("first_name", "last_name", "email", "organization")
         labels = {
             "first_name": "名字",
             "last_name": "姓氏",
             "email": "Email",
             "organization": "所屬單位",
-            "notification_opt_in": "願意接收改善通知",
+        }
+
+
+class CustomerPreferenceForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("notification_opt_in",)
+        labels = {
+            "notification_opt_in": "接收所有改善通知",
         }

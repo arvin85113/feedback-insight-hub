@@ -114,9 +114,14 @@ select {
 }
 
 .flash-stack {
+    position: fixed;
+    top: 84px;
+    right: 24px;
+    z-index: 1000;
     display: grid;
     gap: 12px;
-    margin-bottom: 20px;
+    width: min(420px, calc(100vw - 48px));
+    pointer-events: none;
 }
 
 .flash-message {
@@ -124,6 +129,25 @@ select {
     border-radius: 16px;
     background: #fff3d9;
     border: 1px solid #efd7a0;
+    box-shadow: 0 18px 40px rgba(18, 32, 51, 0.14);
+    animation: flash-toast-out 4.8s ease forwards;
+}
+
+@keyframes flash-toast-out {
+    0% {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    10%,
+    75% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-8px);
+        visibility: hidden;
+    }
 }
 
 .button {
@@ -566,6 +590,35 @@ ul.errorlist {
     align-items: start;
 }
 
+.customer-record-head {
+    align-items: flex-start;
+}
+
+.customer-record-head h2,
+.customer-record-head p {
+    margin: 0;
+}
+
+.customer-record-tabs,
+.customer-row-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.customer-submission-row {
+    gap: 18px;
+}
+
+.customer-answer-snippet {
+    width: fit-content;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(26, 53, 84, 0.05);
+}
+
 .option-pills {
     display: flex;
     flex-wrap: wrap;
@@ -982,6 +1035,14 @@ ul.errorlist {
     margin-top: -8px;
 }
 
+.improvement-tracking-control {
+    margin-bottom: 18px;
+}
+
+.tracking-toggle-form {
+    margin: 0;
+}
+
 .insight-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1246,6 +1307,10 @@ ul.errorlist {
     gap: 16px;
 }
 
+.accordion-body[hidden] {
+    display: none;
+}
+
 .accordion-empty {
     margin: 0;
 }
@@ -1308,6 +1373,10 @@ ul.errorlist {
     background: var(--surface-strong);
     border-radius: var(--radius-md);
     border: 1px solid var(--line);
+}
+
+.inline-improvement-form[hidden] {
+    display: none;
 }
 
 .field-block-checkbox {

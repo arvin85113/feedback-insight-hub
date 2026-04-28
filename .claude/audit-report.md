@@ -83,6 +83,17 @@ Builder UI 規則：
 - 新增題目表單已顯示下一題題號，並在選擇題型時顯示輕量用途提示。
 - Manager dashboard 的全域 Django messages 黃色橫幅已從 `dashboard_base.html` 移除；非後台頁面的 `base.html` messages block 保留。
 
+### 2026-04-28 Manager / Customer UI 最新狀態
+
+- 統計分析、文字分析、改善追蹤、通知中心已統一為「問卷列表 → 選定問卷 → 進入該功能詳情」的新式入口。
+- 這些頁面均保留分類 filter-pill 與排序下拉，預設排序為最新建立；排序選項統一為最新建立、最舊建立、名稱 A-Z。
+- 文字分析與通知中心的右上舊式問卷 selector / 執行按鈕已移除。
+- 改善追蹤新增每份問卷的追蹤開關；停用後不能新增改善通知，避免 UI 顯示可操作但後端語意關閉。
+- Customer Home 已整理為顧客端入口，包含帳戶摘要、填答紀錄、通知摘要；填答紀錄不再顯示答案預覽，避免出現「您的所屬單位」這類問卷答案片段。
+- 填答紀錄摘要格式改為：`N 題已作答，提交時間：YYYY/M/D`。
+- 顧客通知偏好頁已改為通知專用：全域通知開關 + 已填問卷列表 + 每份問卷追蹤開關；個人資料搬到 `/accounts/profile/`。
+- Django fallback 與 Flask customer payload 均補上 `submitted_date` / `submitted_datetime`，避免 template 對 ISO 字串套 `date` filter 導致時間空白。
+
 ### 重要協作提醒
 
 - 目前正式策略是 Django-only fallback；Render 的 Django service 建議不要設定 `FEEDBACK_SERVICE_URL`。
@@ -243,8 +254,8 @@ Builder UI 規則：
 
 | 優先 | 問題 | 說明 |
 |---|---|---|
-| ⚠️ 低 | `SurveyCategory` 未加入 SQLAlchemy models | Flask 目前不需讀取分類，但若日後 API 要回傳分類資訊需補上 |
-| ⚠️ 低 | 題目無拖曳排序 | 題目順序只能在 inline edit 裡手動填數字，操作繁瑣 |
+| ⚠️ 低 | Flask `/api/stats` 未接 Pandas 統計契約 | 若重新啟用 Flask stats，推論統計區塊會缺資料；目前 Django-only fallback 不受影響 |
+| ⚠️ 低 | 題目排序仍是簡易上下移動 | 已可移動題目，但尚未做 drag-and-drop |
 
 ---
 
@@ -258,7 +269,11 @@ Builder UI 規則：
 
 **Manager Workspace：** 左側導覽面板固定不動，右側內容區獨立捲動。
 
-**改善追蹤頁：** Accordion UI，按問卷展開，inline 新增表單，不跳頁。
+**改善追蹤頁：** 新式問卷入口頁，選定問卷後顯示改善項目與 inline 新增表單；可切換單份問卷的改善追蹤開關。
+
+**文字分析 / 通知中心：** 已改成與統計分析一致的問卷列表入口，不再使用右上舊式 selector。
+
+**顧客端：** `/app/` 顯示帳戶摘要、填答紀錄與通知摘要；`/accounts/preferences/` 只管理通知偏好；`/accounts/profile/` 管理個人資料。
 
 **註冊頁：** 欄位精簡為 username / first_name / email / password / notification_opt_in，頂部有 Google 登入預留位（disabled）。
 

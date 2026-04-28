@@ -248,14 +248,12 @@
         </div>
         <div class="toolbar-sort">
             <select class="sort-select" onchange="location.href=this.value">
-                <option value="?sort=title{% if current_category %}&category={{ current_category }}{% endif %}"
-                    {% if current_sort == 'title' %}selected{% endif %}>標題 A-Z</option>
-                <option value="?sort=responses{% if current_category %}&category={{ current_category }}{% endif %}"
-                    {% if current_sort == 'responses' %}selected{% endif %}>回覆數最多</option>
-                <option value="?sort=questions{% if current_category %}&category={{ current_category }}{% endif %}"
-                    {% if current_sort == 'questions' %}selected{% endif %}>題目數最多</option>
                 <option value="?sort=newest{% if current_category %}&category={{ current_category }}{% endif %}"
                     {% if current_sort == 'newest' %}selected{% endif %}>最新建立</option>
+                <option value="?sort=oldest{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'oldest' %}selected{% endif %}>最舊建立</option>
+                <option value="?sort=title{% if current_category %}&category={{ current_category }}{% endif %}"
+                    {% if current_sort == 'title' %}selected{% endif %}>名稱 A-Z</option>
             </select>
         </div>
     </section>

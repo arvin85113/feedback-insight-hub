@@ -1,5 +1,4 @@
 import uuid
-from collections import defaultdict
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -94,7 +93,40 @@ class CustomerHomeView(CustomerRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(service_client.get_customer_home(self.request.user))
+        payload = service_client.get_customer_home(self.request.user)
+        submission_rows = payload.get("submission_rows", [])
+        for row in submission_rows:
+            submission = row.get("submission", {})
+            if row.get("latest_notice"):
+                row["status_key"] = "improved"
+                row["status_label"] = "已促成改善"
+                row["status_class"] = "pill-active"
+            elif submission.get("consent_follow_up"):
+                row["status_key"] = "tracking"
+                row["status_label"] = "願意接收追蹤"
+                row["status_class"] = "pill-active"
+            else:
+                row["status_key"] = "pending"
+                row["status_label"] = "待處理"
+                row["status_class"] = ""
+
+        status_counts = {
+            "all": len(submission_rows),
+            "pending": sum(1 for row in submission_rows if row["status_key"] == "pending"),
+            "tracking": sum(1 for row in submission_rows if row["status_key"] == "tracking"),
+            "improved": sum(1 for row in submission_rows if row["status_key"] == "improved"),
+        }
+        active_status = self.request.GET.get("status", "all")
+        if active_status not in status_counts:
+            active_status = "all"
+        payload["submission_rows"] = (
+            submission_rows
+            if active_status == "all"
+            else [row for row in submission_rows if row["status_key"] == active_status]
+        )
+        payload["submission_status_counts"] = status_counts
+        payload["active_submission_status"] = active_status
+        context.update(payload)
         return context
 
 
@@ -305,7 +337,7 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         selected_slug = self.request.GET.get("survey")
-        sort = self.request.GET.get("sort", "title")
+        sort = self.request.GET.get("sort", "newest")
         category_id = self.request.GET.get("category", "")
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
@@ -313,18 +345,19 @@ class StatsOverviewView(DashboardBaseMixin, TemplateView):
         stats_surveys = (
             Survey.objects.filter(is_active=True)
             .select_related("category")
-            .annotate(question_count=Count("questions"), response_count=Count("submissions"))
+            .annotate(
+                question_count=Count("questions", distinct=True),
+                response_count=Count("submissions", distinct=True),
+            )
         )
         if category_id:
             stats_surveys = stats_surveys.filter(category_id=category_id)
-        if sort == "responses":
-            stats_surveys = stats_surveys.order_by("-response_count", "title")
-        elif sort == "questions":
-            stats_surveys = stats_surveys.order_by("-question_count", "title")
-        elif sort == "newest":
-            stats_surveys = stats_surveys.order_by("-created_at")
-        else:
+        if sort == "oldest":
+            stats_surveys = stats_surveys.order_by("created_at")
+        elif sort == "title":
             stats_surveys = stats_surveys.order_by("title")
+        else:
+            stats_surveys = stats_surveys.order_by("-created_at")
         context["stats_survey_rows"] = stats_surveys
         context["categories"] = SurveyCategory.objects.all()
         context["current_sort"] = sort
@@ -377,10 +410,37 @@ class TextAnalysisView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         selected_slug = self.request.GET.get("survey")
+        sort = self.request.GET.get("sort", "newest")
+        category_id = self.request.GET.get("category", "")
         survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
         context.update(self.get_dashboard_base_context())
         context["selected_survey"] = survey
-        context["keywords"] = service_client.get_text_analysis(selected_slug)["keywords"] if selected_slug else []
+        text_surveys = (
+            Survey.objects.filter(is_active=True)
+            .select_related("category")
+            .annotate(
+                question_count=Count("questions", distinct=True),
+                response_count=Count("submissions", distinct=True),
+                text_question_count=Count(
+                    "questions",
+                    filter=Q(questions__data_type=Question.DataType.TEXT),
+                    distinct=True,
+                ),
+            )
+        )
+        if category_id:
+            text_surveys = text_surveys.filter(category_id=category_id)
+        if sort == "oldest":
+            text_surveys = text_surveys.order_by("created_at")
+        elif sort == "title":
+            text_surveys = text_surveys.order_by("title")
+        else:
+            text_surveys = text_surveys.order_by("-created_at")
+        context["text_survey_rows"] = text_surveys
+        context["categories"] = SurveyCategory.objects.all()
+        context["current_sort"] = sort
+        context["current_category"] = category_id
+        context["keywords"] = service_client.get_text_analysis(selected_slug)["keywords"] if survey else []
         context["text_questions"] = survey.questions.filter(data_type=Question.DataType.TEXT) if survey else []
         context["keyword_categories"] = (
             KeywordCategory.objects.filter(survey=survey).order_by("category", "keyword")
@@ -393,22 +453,53 @@ class ImprovementListView(DashboardBaseMixin, TemplateView):
     template_name = "feedback/improvement_list.html"
     active_section = "feedback:improvement-list"
 
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get("action")
+        if action == "toggle-tracking":
+            survey = get_object_or_404(Survey, id=request.POST.get("survey_id"))
+            survey.improvement_tracking_enabled = request.POST.get("enabled") == "on"
+            survey.save(update_fields=["improvement_tracking_enabled"])
+            state = "啟用" if survey.improvement_tracking_enabled else "停用"
+            messages.success(request, f"「{survey.title}」改善追蹤已{state}。")
+            return redirect(f"{reverse('feedback:improvement-list')}?survey={survey.slug}")
+        return redirect("feedback:improvement-list")
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        all_improvements = ImprovementUpdate.objects.select_related("survey").order_by("survey_id", "-created_at")
-        improvements_by_survey = defaultdict(list)
-        for imp in all_improvements:
-            improvements_by_survey[imp.survey_id].append(imp)
-        surveys = Survey.objects.order_by("title")
-        context["survey_groups"] = [
-            {
-                "survey": survey,
-                "improvements": improvements_by_survey[survey.id],
-                "create_url": reverse("feedback:improvement-create", args=[survey.slug]),
-            }
-            for survey in surveys
-        ]
+        selected_slug = self.request.GET.get("survey")
+        sort = self.request.GET.get("sort", "newest")
+        category_id = self.request.GET.get("category", "")
+        selected_survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
+
+        improvement_surveys = (
+            Survey.objects.filter(is_active=True)
+            .select_related("category")
+            .annotate(
+                improvement_count=Count("improvements", distinct=True),
+                response_count=Count("submissions", distinct=True),
+            )
+        )
+        if category_id:
+            improvement_surveys = improvement_surveys.filter(category_id=category_id)
+        if sort == "oldest":
+            improvement_surveys = improvement_surveys.order_by("created_at")
+        elif sort == "title":
+            improvement_surveys = improvement_surveys.order_by("title")
+        else:
+            improvement_surveys = improvement_surveys.order_by("-created_at")
+
+        context["selected_survey"] = selected_survey
+        context["improvement_survey_rows"] = improvement_surveys
+        context["selected_improvements"] = (
+            selected_survey.improvements.order_by("-created_at") if selected_survey else []
+        )
+        context["create_url"] = (
+            reverse("feedback:improvement-create", args=[selected_survey.slug]) if selected_survey else ""
+        )
+        context["categories"] = SurveyCategory.objects.all()
+        context["current_sort"] = sort
+        context["current_category"] = category_id
         return context
 
 
@@ -419,15 +510,41 @@ class NoticeCenterView(DashboardBaseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_dashboard_base_context())
-        notices = ImprovementUpdate.objects.select_related("survey").order_by("-created_at")
-        context["notices"] = [
-            {
-                "obj": n,
-                "create_url": reverse("feedback:improvement-create", args=[n.survey.slug]),
-            }
-            for n in notices
-        ]
-        context["surveys"] = Survey.objects.filter(is_active=True).order_by("title")
+        selected_slug = self.request.GET.get("survey")
+        sort = self.request.GET.get("sort", "newest")
+        category_id = self.request.GET.get("category", "")
+        selected_survey = Survey.objects.filter(slug=selected_slug).first() if selected_slug else None
+
+        notice_surveys = (
+            Survey.objects.filter(is_active=True)
+            .select_related("category")
+            .annotate(
+                notice_count=Count("improvements", distinct=True),
+                response_count=Count("submissions", distinct=True),
+            )
+        )
+        if category_id:
+            notice_surveys = notice_surveys.filter(category_id=category_id)
+        if sort == "oldest":
+            notice_surveys = notice_surveys.order_by("created_at")
+        elif sort == "title":
+            notice_surveys = notice_surveys.order_by("title")
+        else:
+            notice_surveys = notice_surveys.order_by("-created_at")
+
+        notices = (
+            selected_survey.improvements.order_by("-created_at")
+            if selected_survey else ImprovementUpdate.objects.none()
+        )
+        context["selected_survey"] = selected_survey
+        context["notice_survey_rows"] = notice_surveys
+        context["notices"] = notices
+        context["create_url"] = (
+            reverse("feedback:improvement-create", args=[selected_survey.slug]) if selected_survey else ""
+        )
+        context["categories"] = SurveyCategory.objects.all()
+        context["current_sort"] = sort
+        context["current_category"] = category_id
         return context
 
 
@@ -517,6 +634,9 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.survey = get_object_or_404(Survey, slug=kwargs["slug"])
+        if request.method == "POST" and not self.survey.improvement_tracking_enabled:
+            messages.warning(request, "這份問卷的改善追蹤目前已停用，請先啟用後再建立通知。")
+            return redirect(f"{reverse('feedback:improvement-list')}?survey={self.survey.slug}")
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -569,7 +689,7 @@ class ImprovementCreateView(ManagerRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
-        return reverse_lazy("feedback:improvement-list")
+        return f"{reverse('feedback:improvement-list')}?survey={self.survey.slug}"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

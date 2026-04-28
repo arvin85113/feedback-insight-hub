@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Pandas/SciPy stats are implemented in Django fallback (`feedback/local_service.py`) and shown in `stats_overview.html` via `inferential_analysis`.
 - Flask `/api/stats` still returns the legacy stats payload and does not yet include Pandas `inferential_analysis`; enabling Flask for stats would skip the new inference panel for now.
 - Google login on signup is an intentional disabled placeholder owned by another teammate. Do not remove it as stale UI.
+- Manager analysis-related pages now use a unified survey-index first flow: pick a survey from list cards, then drill into stats / text analysis / improvements / notices.
+- Customer portal has been split into account profile (`/accounts/profile/`) and notification preferences (`/accounts/preferences/`). The customer home page focuses on account summary, submission records, and notification summaries.
 - Uncommitted local collaboration files may exist (`CLAUDE.md`, `.claude/settings.local.json`, `scripts/`). Do not mix them into unrelated feature commits unless requested.
 
 ## Commands
@@ -117,6 +119,7 @@ Django (port 8000)  →  service_client.py  →  Flask microservice (port 5001)
 | `/accounts/logout/` | — | `accounts:logout` |
 | `/accounts/signup/` | — | `accounts:signup` |
 | `/accounts/preferences/` | — | `accounts:preferences` |
+| `/accounts/profile/` | — | `accounts:profile` |
 
 ### Roles
 
@@ -181,6 +184,12 @@ POST actions (`action` hidden input):
 
 Tokenizes submission text using regex supporting both Chinese characters and English words (2+ chars). Filters a hardcoded stop-word list. Returns top 20 keywords by frequency with `category` field (looked up from `KeywordCategory`). Found in `services/feedback_service/analysis.py` and mirrored in `feedback/local_service.py`.
 
+Text analysis UI (`templates/feedback/text_analysis.html`) now matches the survey-manager / stats index pattern:
+- category pills and sort dropdown: `newest` (default), `oldest`, `title`
+- list of surveys with text-analysis availability status
+- selecting a survey via `?survey=<slug>` opens the keyword analysis panel
+- old right-side selector / execute button flow has been removed
+
 ### Statistical Analysis
 
 `feedback/local_service.py` contains the current Pandas/SciPy statistical engine used by the Django fallback stats path.
@@ -211,6 +220,7 @@ Inference rules:
 Important: this engine is currently wired through Django fallback (`feedback/local_service.py`). Flask `/api/stats` has not yet been upgraded to this Pandas contract.
 
 Stats overview UI (`templates/feedback/stats_overview.html`) is structured as an analysis workflow:
+- default entry page is a survey index, aligned with survey manager: category pills, sort dropdown, and survey cards with "查看統計"
 - survey selector and KPI strip
 - flow strip: select survey -> read data types -> recommend methods -> validate conditions and explain
 - data map cards for each question
@@ -242,15 +252,40 @@ Survey builder UI current state:
 
 ### Notice Center
 
-`/dashboard/notices/` lists all `ImprovementUpdate` records. Each row has a `create_url` pointing to the improvement-create form for that notice's own survey. The page header contains a survey `<select>` dropdown; selecting a survey enables the "建立新通知" button with the correct URL. Each list row also has a "同問卷新增" shortcut link.
+`/dashboard/notices/` now follows the same survey-index first pattern as stats and text analysis. It lists surveys with category filter and sort controls; selecting a survey via `?survey=<slug>` opens the notice list for that survey. The old right-side survey selector flow has been removed.
 
-`NoticeCenterView.get_context_data` provides:
-- `notices`: list of `{"obj": ImprovementUpdate, "create_url": str}` ordered by `-created_at`.
-- `surveys`: active surveys queryset for the header dropdown.
+`NoticeCenterView.get_context_data` provides survey list context (`survey_rows`, `categories`, `current_category`, `current_sort`) and selected survey notice detail context (`selected_survey`, `selected_notices`).
 
 ### Improvement List Page
 
-`/dashboard/improvements/` uses an accordion UI: each survey is a collapsible row. Expanding a survey shows its improvement items and an inline form to add new ones (no page navigation). The inline form POSTs to `/survey/<slug>/improvement/new/`. All interaction is vanilla JS + CSS, no external libraries.
+`/dashboard/improvements/` also uses the survey-index first pattern. Selecting a survey opens its improvement tracking workspace. The page supports an improvement-tracking toggle per survey; if tracking is disabled, inline creation is blocked and the UI explains why.
+
+POST actions:
+- `toggle-tracking` — enable / disable `Survey.improvement_tracking_enabled`
+- inline create improvement — only available when tracking is enabled
+
+The older accordion-only behavior is no longer the primary page structure.
+
+### Customer Portal
+
+`/app/` is the customer-facing dashboard. It shows:
+- account summary and latest status
+- submission record cards with status filters: `all`, `pending`, `tracking`, `improved`
+- each submission row shows survey title, category pill, status pill, and concise metadata: `<answer_count> 題已作答，提交時間：YYYY/M/D`
+- answer snippets are intentionally not shown in the submission list to avoid leaking context such as organization / department answers into the overview
+- notification summary links to `/app/notifications/`
+
+Submission payloads from both Django fallback and Flask include:
+- `submitted_at` — ISO timestamp for machine use
+- `submitted_date` — display date, formatted `YYYY/M/D`
+- `submitted_datetime` — display datetime, formatted `YYYY/M/D HH:MM`
+
+`/accounts/preferences/` is now notification-specific:
+- global notification opt-in switch
+- per-filled-survey follow-up switches based on `FeedbackSubmission.consent_follow_up`
+- category pills and sort controls
+
+`/accounts/profile/` owns user profile data such as name, email, and organization. Keep profile fields out of notification preferences.
 
 ### Manager Workspace Layout
 
