@@ -4,6 +4,7 @@ db.sqlite3
 .env
 staticfiles/
 *.log
+supabase密碼.txt
 dist/
 build/
 .pytest_cache/
