@@ -227,6 +227,8 @@ class SurveyCreateView(DashboardBaseMixin, CreateView):
 
     def form_valid(self, form):
         slug = slugify(form.cleaned_data["title"])
+        if not slug:
+            slug = str(uuid.uuid4())[:8]
         if Survey.objects.filter(slug=slug).exists():
             counter = 2
             while Survey.objects.filter(slug=f"{slug}-{counter}").exists():

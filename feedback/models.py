@@ -121,6 +121,9 @@ class Answer(models.Model):
     submission = models.ForeignKey(FeedbackSubmission, on_delete=models.CASCADE, related_name="answers")
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
     value = models.TextField()
+    analysis_text = models.TextField(blank=True, null=True)
+    analysis_version = models.CharField(max_length=32, blank=True, null=True)
+    sentiment_score = models.FloatField(blank=True, null=True)
 
     class Meta:
         unique_together = ("submission", "question")

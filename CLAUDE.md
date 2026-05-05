@@ -14,6 +14,7 @@
 
 - 不要修改 seed_demo.py
 - 測試用假資料請使用 seed_notification_test
+- `demo-2026-q1` 問卷的 `thank_you_email_enabled` 為 `False`，測試感謝信功能請改用 `product-feedback` 問卷
 
 ---
 
@@ -22,6 +23,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Feedback Insight Hub** — a bilingual (Traditional Chinese / English) feedback and survey management platform. Django handles presentation, authentication, and ORM; a Flask microservice handles the feedback domain with analytics. The two services share the same PostgreSQL database (Supabase in production).
+
+## 2026-05-06 更新
+
+- `feedback/models.py`：`Answer` model 新增三個欄位：`analysis_text`（TextField）、`analysis_version`（CharField max 32）、`sentiment_score`（FloatField），均允許 null/blank
+- `feedback/views.py`：`SurveyCreateView.form_valid()` 新增 UUID fallback slug——當 `slugify(title)` 回傳空字串（如標題為純中文或特殊字元）時，改用 `uuid4()` 前 8 碼產生 slug，避免空 slug 寫入資料庫
+- 新增 migration `0011_remove_answer_analysis_text_and_more`（移除欄位，15:04 生成）與 `0012_answer_analysis_text_answer_analysis_version_and_more`（重新加入欄位，16:38 生成），兩個 migration 目前尚未 commit
+
+## 已知問題
+
+- `Answer` model 的 `analysis_text`、`analysis_version`、`sentiment_score` 欄位已定義於 `feedback/models.py`，對應 migration（0011、0012）已生成但尚未 commit；部署前需確認 `python manage.py migrate` 已執行
 
 ## 2026-05-05 更新
 
@@ -82,7 +93,7 @@ gunicorn services.feedback_service.app:app --bind 0.0.0.0:10000
 ```bash
 python manage.py ensure_superuser        # Create admin from env vars (ADMIN_USERNAME/EMAIL/PASSWORD)
 python manage.py seed_demo               # Seed example survey + keyword categories
-python manage.py seed_notification_test  # Seed 4 test users, survey, submissions, improvement dispatch + email
+python manage.py seed_notification_test  # Seed 4 test users, survey, submissions, improvement dispatch + email；每次執行會清除舊派送紀錄並重新寄信
 ```
 
 ## Architecture
