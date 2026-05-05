@@ -23,6 +23,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Feedback Insight Hub** — a bilingual (Traditional Chinese / English) feedback and survey management platform. Django handles presentation, authentication, and ORM; a Flask microservice handles the feedback domain with analytics. The two services share the same PostgreSQL database (Supabase in production).
 
+## 2026-05-05 更新
+
+- 新增 `feedback/migrations/0010_merge_20260428_2314.py`，解決 migration 0007 的分支衝突
+- 確認 `.env` 已設定 `DATABASE_URL`，本機開發直接連線至 Supabase PostgreSQL
+
 ## Current Collaboration Baseline (2026-04-28)
 
 - The product is now fully login-only. Old quick/hybrid access modes have been removed from UI, admin, runtime payloads, and schema.
